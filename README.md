@@ -22,6 +22,19 @@ Cursor for manual code edition<br /><br />
 **On the go setup**<br />
 Claude Code on VPS + Telegram bot flow to message me when PRs are opened. [demo](https://thebuildupdev.substack.com/p/claude-code-from-anywhere-with-your)<br />
 
+# Terminal &amp; editor setup
+
+My terminal stack follows the macOS system appearance — everything flips between light and dark together.
+
+**Ghostty** (`ghostty/`)<br />
+`config` sets `theme = light:light-theme,dark:dark-theme`, and the two palettes live in `ghostty/themes/`: Catppuccin Latte for light, a custom near-black Catppuccin Mocha for dark. App icons for each mode are in `ghostty/icons/`.<br />
+
+**Vim** (`vim/vimrc`)<br />
+Auto-switches `background`/`colorscheme` based on `defaults read -g AppleInterfaceStyle`, plus QoL defaults (line numbers, smartcase search, 2-space indent, blinking block cursor, mouse on).<br />
+
+**Zsh** (`zsh/.zshrc`)<br />
+Oh My Zsh with the `ys` theme and the `git z zsh-autosuggestions zsh-syntax-highlighting` plugins, a 50k-line shared history, and a blinking block cursor to match vim. Plugins are loaded once via the OMZ array (syntax-highlighting last) — no manual `source` duplication.<br />
+
 # Claude code<br />
 
 Claude code is my go to AI tool to help me code.<br />
