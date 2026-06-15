@@ -1,0 +1,42 @@
+" Auto-switch theme based on macOS appearance
+
+if system("defaults read -g AppleInterfaceStyle 2>/dev/null") =~ "Dark"
+  set background=dark
+  colorscheme default
+else
+  set background=light
+  colorscheme zellner
+endif
+
+" Line numbers
+set number
+
+" Syntax & colors
+syntax on
+
+" Cursor as blinking block (consistent with your zsh setting)
+let &t_SI = "\e[1 q"   " blinking block in insert mode
+let &t_EI = "\e[1 q"   " blinking block in normal mode
+
+" Quality of life
+set cursorline          " highlight current line
+set showmatch           " highlight matching brackets
+set hlsearch            " highlight search results
+set incsearch           " search as you type
+set ignorecase          " case-insensitive search...
+set smartcase           " ...unless you type uppercase
+
+" Indentation
+set tabstop=2
+set shiftwidth=2
+set expandtab           " use spaces instead of tabs
+set autoindent
+
+" UI
+set laststatus=2        " always show status bar
+set showcmd             " show incomplete commands
+set wildmenu            " better command-line completion
+
+" MOUSE
+set mouse=a
+
