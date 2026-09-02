@@ -1,0 +1,109 @@
+#!/bin/bash
+# <xbar.title>Herdr Agents</xbar.title>
+# <xbar.desc>Menu bar status for Herdr agents: working / blocked / done at a glance, click to jump.</xbar.desc>
+# <xbar.dependencies>herdr,jq</xbar.dependencies>
+# <swiftbar.hideAbout>true</swiftbar.hideAbout>
+# <swiftbar.hideRunInTerminal>true</swiftbar.hideRunInTerminal>
+# <swiftbar.hideLastUpdated>true</swiftbar.hideLastUpdated>
+# <swiftbar.hideDisablePlugin>true</swiftbar.hideDisablePlugin>
+# <swiftbar.hideSwiftBar>true</swiftbar.hideSwiftBar>
+#
+# Install: brew install --cask swiftbar, then copy this file into the SwiftBar
+# plugin folder (chosen on first launch). The .5s. in the filename is the
+# polling interval — rename to taste (herdr.2s.sh, herdr.30s.sh, ...).
+
+HERDR="${HERDR_BIN:-/opt/homebrew/bin/herdr}"
+JQ="$(command -v jq || echo /usr/bin/jq)"
+
+# Click handler: SwiftBar re-runs this script as "$0 focus <workspace_id>"
+if [ "$1" = "focus" ]; then
+  "$HERDR" workspace focus "$2" >/dev/null 2>&1
+  /usr/bin/osascript -e 'tell application "Ghostty" to activate' >/dev/null 2>&1
+  exit 0
+fi
+
+# Ghostty app icon follows macOS appearance (ghostty has no light:/dark:
+# syntax for macos-custom-icon, so the config points at a current.icns
+# symlink and this pass repoints it): dark -> dracula, light -> ayu-light,
+# then ask ghostty to reload config so the new icon applies live. Runs
+# before the herdr snapshot so it works even with the server down.
+GHOSTTY_ICONS="$HOME/.config/ghostty/icons"
+if [ -d "$GHOSTTY_ICONS" ]; then
+  if /usr/bin/defaults read -g AppleInterfaceStyle >/dev/null 2>&1; then
+    WANT_ICON="$GHOSTTY_ICONS/dracula.icns"
+  else
+    WANT_ICON="$GHOSTTY_ICONS/ayu-light.icns"
+  fi
+  if [ -f "$WANT_ICON" ] && [ "$(readlink "$GHOSTTY_ICONS/current.icns")" != "$WANT_ICON" ]; then
+    ln -sfn "$WANT_ICON" "$GHOSTTY_ICONS/current.icns"
+    /usr/bin/osascript -e 'tell application "Ghostty" to perform action "reload_config" on first terminal' >/dev/null 2>&1
+  fi
+fi
+
+SNAP="$("$HERDR" api snapshot 2>/dev/null)"
+if [ -z "$SNAP" ]; then
+  echo "🐑 –"
+  echo "---"
+  echo "Herdr server not running | color=gray"
+  exit 0
+fi
+
+# Auto-numbering: keep every workspace label prefixed with its positional
+# number ("3. awesome-tips"). Herdr's sidebar can't render numbers (0.8.2),
+# so the number lives in the label — this pass renames any workspace whose
+# prefix is missing or stale (new workspace, or positions shifted after a
+# close). The base name (anything after "N. ") is preserved, so manual
+# renames survive; only the prefix is maintained.
+RENAMES="$(echo "$SNAP" | "$JQ" -r '.result.snapshot.workspaces[]
+  | (.label | sub("^[0-9]+\\.\\s*"; "")) as $base
+  | select(.label != "\(.number). \($base)")
+  | "\(.workspace_id)\t\(.number). \($base)"')"
+if [ -n "$RENAMES" ]; then
+  while IFS=$'\t' read -r wid newlabel; do
+    [ -n "$wid" ] && "$HERDR" workspace rename "$wid" "$newlabel" >/dev/null 2>&1
+  done <<<"$RENAMES"
+  SNAP="$("$HERDR" api snapshot 2>/dev/null)"
+fi
+
+# Menu bar item: the sheep, plus the loudest state — blocked (needs you) >
+# done > working > all idle.
+echo "$SNAP" | "$JQ" -r '
+  .result.snapshot.agents as $a |
+  ([$a[] | select(.agent_status=="blocked")] | length) as $blocked |
+  ([$a[] | select(.agent_status=="done")]    | length) as $done |
+  ([$a[] | select(.agent_status=="working")] | length) as $working |
+  if   $blocked > 0 then "🐑 ❗\($blocked)"
+  elif $done    > 0 then "🐑 ✓ \($done)"
+  elif $working > 0 then "🐑 \($working)"
+  else "🐑" end'
+
+echo "---"
+
+# One row per agent: colored SF Symbol dot + workspace label + pane title.
+# Clicking focuses the workspace and raises Ghostty.
+# "|" is SwiftBar's field separator and newlines start a new menu row, so
+# strip both from titles AND labels — labels are attacker-influenced (any
+# agent in a pane can run `herdr workspace rename`), and an unsanitized
+# "|" would let a renamed workspace inject SwiftBar click-action params
+# (href=/bash=) into its own row. Long UUIDs in titles are elided.
+echo "$SNAP" | "$JQ" -r --arg self "$0" '
+  .result.snapshot as $s |
+  ($s.workspaces | map({(.workspace_id): .label}) | add // {}) as $labels |
+  if ($s.agents | length) == 0 then "No agents running | color=gray"
+  else $s.agents[] |
+    (if   .agent_status=="working" then ["circle.fill",        "#E8A33D"]
+     elif .agent_status=="blocked" then ["exclamationmark.circle.fill", "#E35D6A"]
+     elif .agent_status=="done"    then ["checkmark.circle.fill", "#5BB974"]
+     elif .agent_status=="idle"    then ["circle",              "#98989D"]
+     else                               ["questionmark.circle", "#98989D"] end) as $sym |
+    ((.terminal_title_stripped // "")
+      | gsub("[|\r\n]"; "/")
+      | gsub("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"; "…")
+      | .[0:44]) as $title |
+    (($labels[.workspace_id] // .workspace_id)
+      | gsub("[|\r\n]"; "/")
+      | .[0:44]) as $label |
+    "\($label)\(if $title != "" then "  ·  " + $title else "" end)"
+    + " | sfimage=\($sym[0]) sfcolor=\($sym[1]) sfsize=12 size=13"
+    + " bash=\"\($self)\" param1=focus param2=\(.workspace_id) terminal=false refresh=true"
+  end'

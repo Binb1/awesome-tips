@@ -1,0 +1,26 @@
+# Herdr config — see `herdr --default-config` for all options
+# Keybinding philosophy (paired with ghostty config):
+#   cmd+1..9      -> workspace N  (ghostty sends prefix+digit)
+#   cmd+alt+1..9  -> tab N        (ghostty sends esc+digit = alt+digit)
+
+# Theme mirrors the ghostty pairing (light: Catppuccin Latte,
+# dark: mocha-custom). auto_switch follows the host terminal's
+# light/dark appearance; panel_bg = "reset" keeps the pane area
+# transparent so ghostty's actual background (mocha-custom in
+# dark, Latte in light) shows through instead of Herdr repainting it.
+[theme]
+auto_switch = true
+dark_name = "catppuccin"
+light_name = "catppuccin-latte"
+
+[theme.custom]
+panel_bg = "reset"
+
+[keys]
+# Workspaces are the per-project unit; give them the plain digits
+switch_workspace = "prefix+1..9"
+# Tabs move to direct alt+digit chords (esc+digit encoding)
+switch_tab = "alt+1..9"
+
+[ui]
+show_agent_labels_on_pane_borders = true

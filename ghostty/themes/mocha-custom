@@ -1,0 +1,26 @@
+# Custom Catppuccin Mocha variant: very dark (but not black) background,
+# brighter foreground, white cursor, pink accents on palette 6/14
+# (replacing teal). Pastels slightly intensified (+20% saturation) from
+# stock Catppuccin Mocha.
+background = #151517
+foreground = #EFF1F8
+selection-background = #585b70
+selection-foreground = #cdd6f4
+cursor-color = #FFFFFF
+cursor-text = #1e1e2e
+palette = 0=#45475a
+palette = 1=#fd7298
+palette = 2=#94e78e
+palette = 3=#ffdf98
+palette = 4=#75a9ff
+palette = 5=#f9ade4
+palette = 6=#ff8dfe
+palette = 7=#a6adc8
+palette = 8=#585b70
+palette = 9=#ff5d89
+palette = 10=#76dd78
+palette = 11=#f3d37a
+palette = 12=#629eff
+palette = 13=#f898db
+palette = 14=#ff9efe
+palette = 15=#bac2de
