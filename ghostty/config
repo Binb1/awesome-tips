@@ -80,8 +80,9 @@ macos-option-as-alt = true
 
 alpha-blending = "native"
 
-# forces dim/faint text (which no palette entry controls) to stay readable
-minimum-contrast = 1.7
+# keep low: higher values recolor the cursor and selection (broke the
+# orange cursor at 1.7)
+minimum-contrast = 1.3
 
 macos-icon = blueprint
 
