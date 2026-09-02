@@ -83,6 +83,21 @@ Herdr-side remap in `config.toml`: `switch_workspace = "prefix+1..9"`
 esc+digit encoding — this is why plain `Opt+digit` also jumps tabs, since
 Ghostty sets `macos-option-as-alt = true`).
 
+## Theme
+
+Herdr's UI follows the Ghostty theme pairing automatically (`[theme]` in
+`config.toml`): `auto_switch = true` tracks the terminal's light/dark
+appearance, switching between `catppuccin-latte` (light) and `catppuccin`
+Mocha (dark) — the same pair Ghostty uses. `panel_bg = "reset"` keeps the
+pane area transparent so Ghostty's real background shows through (the
+mocha-custom grey `#242428` in dark mode, Latte in light) instead of Herdr
+repainting it with stock Catppuccin.
+
+Limitation: `[theme.custom]` overrides apply in both modes (no
+`theme.custom.dark`/`.light` as of 0.8.2), so the mocha-custom saturation
+boost can't be mirrored onto the sidebar chrome without breaking light mode
+— the sidebar stays stock Catppuccin.
+
 ## Sessions and the `h` function
 
 `h` in any project directory attaches to a session named after the folder
