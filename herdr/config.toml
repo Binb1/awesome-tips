@@ -1,0 +1,10 @@
+# Herdr config — see `herdr --default-config` for all options
+# Keybinding philosophy (paired with ghostty config):
+#   cmd+1..9      -> workspace N  (ghostty sends prefix+digit)
+#   cmd+alt+1..9  -> tab N        (ghostty sends esc+digit = alt+digit)
+
+[keys]
+# Workspaces are the per-project unit; give them the plain digits
+switch_workspace = "prefix+1..9"
+# Tabs move to direct alt+digit chords (esc+digit encoding)
+switch_tab = "alt+1..9"

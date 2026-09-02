@@ -19,6 +19,9 @@ Langfuse for agent tracing<br />
 Claude Code with subagents<br />
 Cursor for manual code edition<br /><br />
 
+**Terminal**<br />
+Ghostty + Herdr (terminal multiplexer for AI agents) — full setup guide in [herdr/](herdr/), configs in [herdr/config.toml](herdr/config.toml) and [ghostty/config](ghostty/config)<br />
+
 **On the go setup**<br />
 Claude Code on VPS + Telegram bot flow to message me when PRs are opened. [demo](https://thebuildupdev.substack.com/p/claude-code-from-anywhere-with-your)<br />
 
