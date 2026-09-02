@@ -6,7 +6,7 @@
 # Theme mirrors the ghostty pairing (light: Catppuccin Latte,
 # dark: mocha-custom). auto_switch follows the host terminal's
 # light/dark appearance; panel_bg = "reset" keeps the pane area
-# transparent so ghostty's actual background (mocha-custom grey in
+# transparent so ghostty's actual background (mocha-custom in
 # dark, Latte in light) shows through instead of Herdr repainting it.
 [theme]
 auto_switch = true
