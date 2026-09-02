@@ -32,6 +32,10 @@ ghostty +validate-config
 herdr integration install claude
 herdr integration status
 
+# 4b. Optional: menu bar agent status (see "Menu bar" below)
+brew install --cask swiftbar
+cp herdr/swiftbar/herdr.5s.sh ~/Documents/SwiftBar/   # or wherever SwiftBar's plugin folder is
+
 # 5. Shell helper — add to the end of ~/.zshrc
 # h() { herdr --session "${1:-${PWD:t}}" }
 ```
@@ -50,6 +54,7 @@ config reload is not enough).
 | Claude Code integration hook (feeds agent states) | `~/.claude/hooks/herdr-agent-state.sh` |
 | Herdr skill for Claude Code | `~/.claude/skills/herdr` |
 | `h` shell function | end of `~/.zshrc` |
+| SwiftBar menu bar plugin | SwiftBar plugin folder (copy of `herdr/swiftbar/herdr.5s.sh`) |
 
 The hook and the skill are managed by `herdr integration` — don't edit them,
 reinstalling overwrites both.
@@ -97,6 +102,24 @@ Limitation: `[theme.custom]` overrides apply in both modes (no
 `theme.custom.dark`/`.light` as of 0.8.2), so the mocha-custom saturation
 boost can't be mirrored onto the sidebar chrome without breaking light mode
 — the sidebar stays stock Catppuccin.
+
+## Menu bar (SwiftBar)
+
+`swiftbar/herdr.5s.sh` is a SwiftBar plugin that shows agent states in the
+macOS menu bar — the thing the sidebar can't do when Ghostty is hidden.
+
+- **Icon**: loudest state wins — `🔴 N` agents blocked (need input) > `🟢 N`
+  done > `🐑 N` working > `🐑` all idle > `🐑 –` server not running.
+- **Dropdown**: one row per agent (status glyph, workspace label, pane
+  title); clicking a row focuses that workspace and raises Ghostty.
+
+Data comes from `herdr api snapshot` (polled; the `.5s.` in the filename is
+the interval — rename to change it), clicks go through
+`herdr workspace focus`. Needs `jq`. Covers the default session only.
+
+Setup: `brew install --cask swiftbar`, launch it once to pick a plugin
+folder, copy the script there, make sure it's executable. Edits to the copy
+apply on the next refresh.
 
 ## Sessions and the `h` function
 
