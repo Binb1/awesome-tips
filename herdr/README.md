@@ -32,9 +32,10 @@ ghostty +validate-config
 herdr integration install claude
 herdr integration status
 
-# 4b. Optional: menu bar agent status (see "Menu bar" below)
+# 4b. Optional: menu bar agent status + SSH toggle (see "Menu bar" below)
 brew install --cask swiftbar
 cp herdr/swiftbar/herdr.5s.sh ~/Documents/SwiftBar/   # or wherever SwiftBar's plugin folder is
+cp herdr/swiftbar/ssh.30s.sh ~/Documents/SwiftBar/
 
 # 5. Shell helpers — add to the end of ~/.zshrc
 # h() { herdr --session "${1:-${PWD:t}}" }
@@ -147,6 +148,13 @@ Needs `jq`. Covers the default session only.
 Setup: `brew install --cask swiftbar`, launch it once to pick a plugin
 folder, copy the script there, make sure it's executable. Edits to the copy
 apply on the next refresh.
+
+`swiftbar/ssh.30s.sh` is a companion plugin for the phone-SSH piloting
+flow (ssh into the Mac, run `herdr`): shows whether macOS Remote Login is
+on, lists active SSH sessions (user + source host), offers a copy-paste
+`ssh user@ip` line, and toggles Remote Login on/off (admin-password
+prompt; drives sshd via `launchctl`, since `systemsetup` needs Full Disk
+Access on macOS 13+).
 
 ### SSH companion (`swiftbar/ssh.30s.sh`)
 
