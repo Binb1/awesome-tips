@@ -1,11 +1,12 @@
 # Custom Catppuccin Latte variant for light mode: grey background (clearly
-# not white), darker foreground for contrast, strong pastel-orange cursor,
-# and intense colors (+75% saturation, darkened ~22%) compared to stock Latte.
+# not white), dark foreground for contrast, soft pastel-orange cursor,
+# and intense colors (+75% saturation, darkened ~22%; teals darkened
+# further) compared to stock Latte.
 background = #E0E0E3
-foreground = #37394c
+foreground = #282A3B
 selection-background = #acb0be
-selection-foreground = #37394c
-cursor-color = #FF9E3D
+selection-foreground = #282A3B
+cursor-color = #FCAE60
 cursor-text = #202020
 palette = 0=#5c5f77
 palette = 1=#b00026
@@ -13,7 +14,7 @@ palette = 2=#1c9e00
 palette = 3=#c57200
 palette = 4=#0048d6
 palette = 5=#ff14c0
-palette = 6=#008289
+palette = 6=#006F75
 palette = 7=#acb0be
 palette = 8=#6c6f85
 palette = 9=#cd0018
@@ -21,5 +22,5 @@ palette = 10=#1faa0e
 palette = 11=#dd8400
 palette = 12=#0038fd
 palette = 13=#ff2fbe
-palette = 14=#009aa6
+palette = 14=#00838D
 palette = 15=#bcc0cc

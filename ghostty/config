@@ -64,8 +64,14 @@ window-colorspace = "display-p3"
 window-save-state = always
 
 
-# shell integration
+# shell integration ("no-cursor" stops it forcing a steady cursor at the
+# prompt, so the blinking style below actually applies)
 shell-integration = detect
+shell-integration-features = no-cursor
+
+# blinking bar cursor
+cursor-style = bar
+cursor-style-blink = true
 
 
 # macos specific features
