@@ -88,7 +88,8 @@ alpha-blending = "native"
 # orange cursor at 1.7)
 minimum-contrast = 1.3
 
-macos-icon = blueprint
+macos-icon = custom
+macos-custom-icon = /Users/robin/.config/ghostty/icons/current.icns
 
 # Herdr: forward ghostty-style shortcuts as Herdr prefix sequences
 # (\x02 = Ctrl+B, Herdr's prefix key). These replace ghostty's native

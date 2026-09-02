@@ -21,8 +21,11 @@ cp herdr/config.toml ~/.config/herdr/config.toml
 # 3. Ghostty config (includes the Herdr keybinds at the bottom)
 #    + custom light/dark themes (latte-custom / mocha-custom)
 cp ghostty/config ~/Library/Application\ Support/com.mitchellh.ghostty/config
-mkdir -p ~/.config/ghostty/themes
+mkdir -p ~/.config/ghostty/themes ~/.config/ghostty/icons
 cp ghostty/themes/* ~/.config/ghostty/themes/
+cp ghostty/icons/*.icns ~/.config/ghostty/icons/   # app icons; the SwiftBar
+# plugin maintains the current.icns symlink these feed (dark: dracula,
+# light: ayu-light)
 ghostty +validate-config
 # If Ghostty's in-app theme picker was ever used, it leaves an override at
 # ~/Library/Application Support/com.mitchellh.ghostty/auto/theme.ghostty
@@ -134,6 +137,12 @@ macOS menu bar — the thing the sidebar can't do when Ghostty is hidden.
   server not running.
 - **Dropdown**: one row per agent (colored status dot, workspace label,
   pane title); clicking a row focuses that workspace and raises Ghostty.
+- **Ghostty icon switching**: each poll checks macOS appearance and
+  repoints `~/.config/ghostty/icons/current.icns` (dark → dracula,
+  light → ayu-light), then triggers a Ghostty config reload via
+  AppleScript so the Dock icon updates live. Ghostty's `light:`/`dark:`
+  config syntax is theme-only, hence the symlink. First run prompts once
+  to allow SwiftBar to control Ghostty.
 - **Auto-numbering**: each poll also keeps workspace labels prefixed with
   their positional number (see "Workspace numbers" below) — new workspaces
   get their `N. ` prefix within one refresh, and prefixes are fixed up

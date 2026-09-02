@@ -22,6 +22,24 @@ if [ "$1" = "focus" ]; then
   exit 0
 fi
 
+# Ghostty app icon follows macOS appearance (ghostty has no light:/dark:
+# syntax for macos-custom-icon, so the config points at a current.icns
+# symlink and this pass repoints it): dark -> dracula, light -> ayu-light,
+# then ask ghostty to reload config so the new icon applies live. Runs
+# before the herdr snapshot so it works even with the server down.
+GHOSTTY_ICONS="$HOME/.config/ghostty/icons"
+if [ -d "$GHOSTTY_ICONS" ]; then
+  if /usr/bin/defaults read -g AppleInterfaceStyle >/dev/null 2>&1; then
+    WANT_ICON="$GHOSTTY_ICONS/dracula.icns"
+  else
+    WANT_ICON="$GHOSTTY_ICONS/ayu-light.icns"
+  fi
+  if [ -f "$WANT_ICON" ] && [ "$(readlink "$GHOSTTY_ICONS/current.icns")" != "$WANT_ICON" ]; then
+    ln -sfn "$WANT_ICON" "$GHOSTTY_ICONS/current.icns"
+    /usr/bin/osascript -e 'tell application "Ghostty" to perform action "reload_config" on first terminal' >/dev/null 2>&1
+  fi
+fi
+
 SNAP="$("$HERDR" api snapshot 2>/dev/null)"
 if [ -z "$SNAP" ]; then
   echo "🐑 –"
