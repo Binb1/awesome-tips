@@ -149,20 +149,14 @@ Setup: `brew install --cask swiftbar`, launch it once to pick a plugin
 folder, copy the script there, make sure it's executable. Edits to the copy
 apply on the next refresh.
 
-`swiftbar/ssh.30s.sh` is a companion plugin for the phone-SSH piloting
-flow (ssh into the Mac, run `herdr`): shows whether macOS Remote Login is
-on, lists active SSH sessions (user + source host), offers a copy-paste
-`ssh user@ip` line, and toggles Remote Login on/off (admin-password
-prompt; drives sshd via `launchctl`, since `systemsetup` needs Full Disk
-Access on macOS 13+).
-
 ### SSH companion (`swiftbar/ssh.30s.sh`)
 
 Shows whether the Mac is reachable for the phone-piloting flow (SSH in from
 the phone, run `herdr` — see "Piloting from a phone" below):
 
-- **Icon**: gray lock = Remote Login on, no one connected; green lock +
-  count = active SSH sessions; slashed lock = Remote Login off.
+- **Icon**: one laptop-lock glyph in every state — open lock (gray) =
+  Remote Login on, no one connected; open lock (green) + count = active
+  SSH sessions; closed lock = Remote Login off.
 - **Dropdown**: status + LAN IP, one row per connected client (user + source
   host, from `who`), a "Copy: ssh user@ip" row, and a Turn SSH on/off toggle.
   The toggle drives sshd via `launchctl enable/disable + bootstrap/bootout`
