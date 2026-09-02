@@ -72,6 +72,10 @@ shell-integration-features = no-cursor
 # blinking block cursor
 cursor-style = block
 cursor-style-blink = true
+# cursor color pinned at config level: theme-file cursor colors get stuck
+# on light/dark appearance switches (ghostty discussion #12708)
+cursor-color = #F8BC82
+cursor-text = #202020
 
 
 # macos specific features
