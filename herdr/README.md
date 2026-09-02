@@ -58,7 +58,8 @@ config reload is not enough).
 | Ghostty config (keybinds at the bottom) | `~/Library/Application Support/com.mitchellh.ghostty/config` |
 | Claude Code integration hook (feeds agent states) | `~/.claude/hooks/herdr-agent-state.sh` |
 | Herdr skill for Claude Code | `~/.claude/skills/herdr` |
-| `h` shell function | end of `~/.zshrc` |
+| Shell helpers (`h` function + orange-cursor hook) | end of `~/.zshrc` |
+| Ghostty custom themes (latte-custom / mocha-custom) | `~/.config/ghostty/themes/` |
 | SwiftBar menu bar plugin | SwiftBar plugin folder (copy of `herdr/swiftbar/herdr.5s.sh`) |
 
 The hook and the skill are managed by `herdr integration` — don't edit them,
@@ -94,6 +95,20 @@ esc+digit encoding — this is why plain `Opt+digit` also jumps tabs, since
 Ghostty sets `macos-option-as-alt = true`).
 
 ## Theme
+
+Ghostty follows the macOS appearance via
+`theme = light:latte-custom,dark:mocha-custom` — two custom Catppuccin
+variants in `~/.config/ghostty/themes/`:
+
+- **mocha-custom** (dark): very dark `#151517` background, stock Mocha
+  pastels slightly intensified, pink accents on palette 6/14.
+- **latte-custom** (light): grey `#E0E0E3` background (not white), dark
+  foreground for contrast, vivid max-saturation palette with soft pastel
+  greens, orange selection.
+
+The cursor is an orange (`#F8BC82`) blinking block in both modes. It is
+deliberately defined in the main config, NOT the theme files, and
+re-asserted by a zsh `precmd` hook — see "Known quirks".
 
 Herdr's UI follows the Ghostty theme pairing automatically (`[theme]` in
 `config.toml`): `auto_switch = true` tracks the terminal's light/dark
@@ -132,6 +147,39 @@ Needs `jq`. Covers the default session only.
 Setup: `brew install --cask swiftbar`, launch it once to pick a plugin
 folder, copy the script there, make sure it's executable. Edits to the copy
 apply on the next refresh.
+
+### SSH companion (`swiftbar/ssh.30s.sh`)
+
+Shows whether the Mac is reachable for the phone-piloting flow (SSH in from
+the phone, run `herdr` — see "Piloting from a phone" below):
+
+- **Icon**: gray lock = Remote Login on, no one connected; green lock +
+  count = active SSH sessions; slashed lock = Remote Login off.
+- **Dropdown**: status + LAN IP, one row per connected client (user + source
+  host, from `who`), a "Copy: ssh user@ip" row, and a Turn SSH on/off toggle.
+  The toggle drives sshd via `launchctl enable/disable + bootstrap/bootout`
+  behind macOS's admin-password dialog (osascript). It deliberately avoids
+  `systemsetup -setremotelogin`, which requires Full Disk Access on top of
+  root (macOS 13+) and fails silently from SwiftBar. Toggle failures
+  surface as a notification.
+
+No dependencies; the on/off check is just "is anything listening on
+localhost:22" (`nc`), which needs no privileges.
+
+## Piloting from a phone
+
+No app needed — the Herdr session server keeps panes alive, so any SSH
+client attaches to the same session:
+
+1. Mac: enable Remote Login (System Settings → General → Sharing, or
+   `sudo systemsetup -setremotelogin on`).
+2. Phone (same Wi-Fi): any SSH client (moshi/Termius/Blink), then
+   `ssh <user>@<mac-ip>` and `herdr` — the TUI adapts to narrow screens.
+3. Detach with `Ctrl+B q`; reattach later from anywhere with `herdr`.
+
+Hardening: restrict Remote Login to your user in the Sharing pane, prefer
+key auth over passwords, never port-forward 22 on the router — use
+Tailscale for access beyond the LAN.
 
 ## Sessions and the `h` function
 
@@ -184,3 +232,18 @@ ghostty +show-config | grep keybind   # effective bindings (spot stale physical 
   detach/quit of Ghostty loses nothing.
 - Optional extras are commented out at the bottom of the Ghostty config:
   `Cmd+Shift+Enter` zoom, `Cmd+W` close pane (would lose Ghostty close-tab).
+- Ghostty loses cursor colors on light/dark appearance switches
+  ([ghostty #12708](https://github.com/ghostty-org/ghostty/discussions/12708))
+  — even config-level `cursor-color` gets wiped on a dark→light flip. Hence
+  the belt-and-suspenders setup: cursor pinned in the main config (initial
+  state) plus the `_orange_cursor` zsh precmd hook re-stamping it via OSC 12
+  at every prompt. If the cursor ever turns black, run
+  `printf '\e]112\a\e[0 q'` or just open a new prompt.
+- Ghostty's cursor and selection colors only apply where Ghostty renders
+  them: plain shell prompts. TUI apps (Claude Code, vim, ...) draw their own
+  cursor and selection highlight — the blue selection inside Claude Code is
+  Claude Code's, not the theme's. The hollow-outline cursor is just
+  Ghostty's unfocused-window style, not a bug.
+- If Ghostty's in-app theme picker was ever used, it leaves
+  `~/Library/Application Support/com.mitchellh.ghostty/auto/theme.ghostty`
+  behind, which silently overrides the config's `theme` line — delete it.

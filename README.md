@@ -20,7 +20,8 @@ Claude Code with subagents<br />
 Cursor for manual code edition<br /><br />
 
 **Terminal**<br />
-Ghostty + Herdr (terminal multiplexer for AI agents) — full setup guide in [herdr/](herdr/), configs in [herdr/config.toml](herdr/config.toml) and [ghostty/config](ghostty/config)<br />
+Ghostty + Herdr (terminal multiplexer for AI agents), with custom light/dark themes that follow macOS appearance and a SwiftBar menu-bar widget for live agent status.<br />
+Full setup guide in [herdr/](herdr/) — configs: [herdr/config.toml](herdr/config.toml), [ghostty/config](ghostty/config), themes in [ghostty/themes/](ghostty/themes/)<br />
 
 **On the go setup**<br />
 Claude Code on VPS + Telegram bot flow to message me when PRs are opened. [demo](https://thebuildupdev.substack.com/p/claude-code-from-anywhere-with-your)<br />
@@ -29,7 +30,7 @@ Claude Code on VPS + Telegram bot flow to message me when PRs are opened. [demo]
 
 Claude code is my go to AI tool to help me code.<br />
 It's very important to setup it well to obtain good results.<br />
-I'm using subagents in Claude code, you can find a folder in all the subagents I use on my projects in the claude-code-agents folder/<br />
+I'm using subagents in Claude code — the agents, commands, and skills I use on my projects are in the [claude-code/](claude-code/) folder.<br />
 
 ## Useful ressources
 
