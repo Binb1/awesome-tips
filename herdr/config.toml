@@ -24,3 +24,18 @@ switch_tab = "alt+1..9"
 
 [ui]
 show_agent_labels_on_pane_borders = true
+
+# Command palette (binb1.palette) — prefix+f (prefix+p is previous_tab)
+[[keys.command]]
+key = "prefix+f"
+type = "plugin_action"
+command = "binb1.palette.open"
+description = "Command palette"
+
+# Same action bound directly to Cmd+P (needs a terminal that forwards
+# cmd, e.g. Ghostty). The action toggles: open if closed, close if open.
+[[keys.command]]
+key = "cmd+p"
+type = "plugin_action"
+command = "binb1.palette.open"
+description = "Command palette"
