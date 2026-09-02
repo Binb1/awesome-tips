@@ -8,6 +8,10 @@ idle). Ghostty is just a viewport; running `herdr` in any shell reattaches.
 Hierarchy: **session** (isolation boundary) > **workspace** (one per project) >
 **tab** (layout inside a project) > **pane** (one terminal).
 
+Companion plugin: [herdr-palette](https://github.com/Binb1/herdr-palette) is a
+command palette popup for Herdr — jump to workspaces and agents, run plugin
+actions, run Herdr commands. `config.toml` binds it to `prefix+f` and `Cmd+P`.
+
 ## Bootstrap a new machine
 
 ```bash
