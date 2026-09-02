@@ -69,8 +69,8 @@ window-save-state = always
 shell-integration = detect
 shell-integration-features = no-cursor
 
-# blinking bar cursor
-cursor-style = bar
+# blinking block cursor
+cursor-style = block
 cursor-style-blink = true
 
 
