@@ -63,8 +63,11 @@ echo "---"
 
 # One row per agent: colored SF Symbol dot + workspace label + pane title.
 # Clicking focuses the workspace and raises Ghostty.
-# "|" is SwiftBar's field separator, so strip it from titles; long UUIDs in
-# titles (Claude resume sessions) are elided.
+# "|" is SwiftBar's field separator and newlines start a new menu row, so
+# strip both from titles AND labels — labels are attacker-influenced (any
+# agent in a pane can run `herdr workspace rename`), and an unsanitized
+# "|" would let a renamed workspace inject SwiftBar click-action params
+# (href=/bash=) into its own row. Long UUIDs in titles are elided.
 echo "$SNAP" | "$JQ" -r --arg self "$0" '
   .result.snapshot as $s |
   ($s.workspaces | map({(.workspace_id): .label}) | add // {}) as $labels |
@@ -76,10 +79,13 @@ echo "$SNAP" | "$JQ" -r --arg self "$0" '
      elif .agent_status=="idle"    then ["circle",              "#98989D"]
      else                               ["questionmark.circle", "#98989D"] end) as $sym |
     ((.terminal_title_stripped // "")
-      | gsub("\\|"; "/")
+      | gsub("[|\r\n]"; "/")
       | gsub("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"; "…")
       | .[0:44]) as $title |
-    "\($labels[.workspace_id] // .workspace_id)\(if $title != "" then "  ·  " + $title else "" end)"
+    (($labels[.workspace_id] // .workspace_id)
+      | gsub("[|\r\n]"; "/")
+      | .[0:44]) as $label |
+    "\($label)\(if $title != "" then "  ·  " + $title else "" end)"
     + " | sfimage=\($sym[0]) sfcolor=\($sym[1]) sfsize=12 size=13"
     + " bash=\"\($self)\" param1=focus param2=\(.workspace_id) terminal=false refresh=true"
   end'
