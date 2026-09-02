@@ -36,8 +36,13 @@ herdr integration status
 brew install --cask swiftbar
 cp herdr/swiftbar/herdr.5s.sh ~/Documents/SwiftBar/   # or wherever SwiftBar's plugin folder is
 
-# 5. Shell helper — add to the end of ~/.zshrc
+# 5. Shell helpers — add to the end of ~/.zshrc
 # h() { herdr --session "${1:-${PWD:t}}" }
+#
+# # Reassert the orange cursor at every prompt — ghostty loses theme/config
+# # cursor colors on light/dark appearance switches (ghostty #12708)
+# _orange_cursor() { printf '\e]12;#F8BC82\a' }
+# precmd_functions+=(_orange_cursor)
 ```
 
 Restart Ghostty fully after copying the config (keybinds and icon need it, a
