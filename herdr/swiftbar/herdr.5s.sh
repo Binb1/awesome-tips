@@ -24,25 +24,40 @@ fi
 
 SNAP="$("$HERDR" api snapshot 2>/dev/null)"
 if [ -z "$SNAP" ]; then
-  echo ":xmark.circle: | sfsize=15"
+  echo "🐑 –"
   echo "---"
   echo "Herdr server not running | color=gray"
   exit 0
 fi
 
-# Menu bar item: monochrome SF Symbol (template-rendered, matches the other
-# menu extras) + a count. Loudest state wins: blocked (needs you) > done >
-# working > all idle.
+# Auto-numbering: keep every workspace label prefixed with its positional
+# number ("3. awesome-tips"). Herdr's sidebar can't render numbers (0.8.2),
+# so the number lives in the label — this pass renames any workspace whose
+# prefix is missing or stale (new workspace, or positions shifted after a
+# close). The base name (anything after "N. ") is preserved, so manual
+# renames survive; only the prefix is maintained.
+RENAMES="$(echo "$SNAP" | "$JQ" -r '.result.snapshot.workspaces[]
+  | (.label | sub("^[0-9]+\\.\\s*"; "")) as $base
+  | select(.label != "\(.number). \($base)")
+  | "\(.workspace_id)\t\(.number). \($base)"')"
+if [ -n "$RENAMES" ]; then
+  while IFS=$'\t' read -r wid newlabel; do
+    [ -n "$wid" ] && "$HERDR" workspace rename "$wid" "$newlabel" >/dev/null 2>&1
+  done <<<"$RENAMES"
+  SNAP="$("$HERDR" api snapshot 2>/dev/null)"
+fi
+
+# Menu bar item: the sheep, plus the loudest state — blocked (needs you) >
+# done > working > all idle.
 echo "$SNAP" | "$JQ" -r '
   .result.snapshot.agents as $a |
   ([$a[] | select(.agent_status=="blocked")] | length) as $blocked |
   ([$a[] | select(.agent_status=="done")]    | length) as $done |
   ([$a[] | select(.agent_status=="working")] | length) as $working |
-  if   $blocked > 0 then ":exclamationmark.circle.fill: \($blocked)"
-  elif $done    > 0 then ":checkmark.circle: \($done)"
-  elif $working > 0 then ":arrow.triangle.2.circlepath: \($working)"
-  else ":moon.zzz:" end
-  + " | sfsize=15"'
+  if   $blocked > 0 then "🐑 ❗\($blocked)"
+  elif $done    > 0 then "🐑 ✓ \($done)"
+  elif $working > 0 then "🐑 \($working)"
+  else "🐑" end'
 
 echo "---"
 

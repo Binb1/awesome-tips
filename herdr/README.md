@@ -113,14 +113,21 @@ boost can't be mirrored onto the sidebar chrome without breaking light mode
 `swiftbar/herdr.5s.sh` is a SwiftBar plugin that shows agent states in the
 macOS menu bar — the thing the sidebar can't do when Ghostty is hidden.
 
-- **Icon**: loudest state wins — `🔴 N` agents blocked (need input) > `🟢 N`
-  done > `🐑 N` working > `🐑` all idle > `🐑 –` server not running.
-- **Dropdown**: one row per agent (status glyph, workspace label, pane
-  title); clicking a row focuses that workspace and raises Ghostty.
+- **Icon**: the sheep, plus the loudest state — `🐑 ❗N` agents blocked
+  (need input) > `🐑 ✓ N` done > `🐑 N` working > `🐑` all idle > `🐑 –`
+  server not running.
+- **Dropdown**: one row per agent (colored status dot, workspace label,
+  pane title); clicking a row focuses that workspace and raises Ghostty.
+- **Auto-numbering**: each poll also keeps workspace labels prefixed with
+  their positional number (see "Workspace numbers" below) — new workspaces
+  get their `N. ` prefix within one refresh, and prefixes are fixed up
+  after a close shifts positions. The base name after `N. ` is untouched,
+  so manual renames survive.
 
 Data comes from `herdr api snapshot` (polled; the `.5s.` in the filename is
 the interval — rename to change it), clicks go through
-`herdr workspace focus`. Needs `jq`. Covers the default session only.
+`herdr workspace focus`, renumbering through `herdr workspace rename`.
+Needs `jq`. Covers the default session only.
 
 Setup: `brew install --cask swiftbar`, launch it once to pick a plugin
 folder, copy the script there, make sure it's executable. Edits to the copy
@@ -140,10 +147,15 @@ first (`Ctrl+B q`) or use a native Ghostty tab (`Cmd+Shift+T`).
 ## Workspace numbers
 
 The sidebar cannot render workspace numbers (checked 0.8.2), so numbers live in
-the labels: "1. Fodmap", "2. awesome-tips". Rename with `Ctrl+B Shift+W` or
-`herdr workspace rename <id>` (`herdr workspace list` shows ids). Numbers are
-positional: closing a workspace shifts the ones after it, so renumber after
-closing.
+the labels: "1. Fodmap", "2. awesome-tips". Numbers are positional: closing a
+workspace shifts the ones after it.
+
+The SwiftBar plugin maintains these prefixes automatically on every poll
+(new workspaces get numbered, stale prefixes get fixed after a close). To
+rename a workspace, change only the part after `N. ` — via `Ctrl+B Shift+W`
+or `herdr workspace rename <id>` (`herdr workspace list` shows ids); the
+plugin re-asserts the number prefix and leaves the rest alone. Without
+SwiftBar running, prefixes are manual again.
 
 ## Useful commands
 
