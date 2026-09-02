@@ -19,11 +19,14 @@ mkdir -p ~/.config/herdr
 cp herdr/config.toml ~/.config/herdr/config.toml
 
 # 3. Ghostty config (includes the Herdr keybinds at the bottom)
-#    + custom dark theme (light mode uses the built-in Catppuccin Latte)
+#    + custom light/dark themes (latte-custom / mocha-custom)
 cp ghostty/config ~/Library/Application\ Support/com.mitchellh.ghostty/config
 mkdir -p ~/.config/ghostty/themes
-cp ghostty/themes/mocha-custom ~/.config/ghostty/themes/mocha-custom
+cp ghostty/themes/* ~/.config/ghostty/themes/
 ghostty +validate-config
+# If Ghostty's in-app theme picker was ever used, it leaves an override at
+# ~/Library/Application Support/com.mitchellh.ghostty/auto/theme.ghostty
+# that silently wins over the config's theme line — delete it.
 
 # 4. Claude Code integration (installs the agent-state hook + herdr skill)
 herdr integration install claude
