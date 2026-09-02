@@ -90,7 +90,7 @@ Herdr's UI follows the Ghostty theme pairing automatically (`[theme]` in
 appearance, switching between `catppuccin-latte` (light) and `catppuccin`
 Mocha (dark) — the same pair Ghostty uses. `panel_bg = "reset"` keeps the
 pane area transparent so Ghostty's real background shows through (the
-mocha-custom near-black `#0F0F10` in dark mode, the latte-custom grey
+mocha-custom very-dark `#151517` in dark mode, the latte-custom grey
 `#E0E0E3` in light) instead of Herdr repainting it with stock Catppuccin.
 
 Limitation: `[theme.custom]` overrides apply in both modes (no
