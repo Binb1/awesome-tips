@@ -37,6 +37,18 @@ case "$1" in
   copymosh)
     printf 'mosh %s@%s' "$USER" "$2" | /usr/bin/pbcopy
     exit 0 ;;
+  cleanmosh)
+    # Kill every detached mosh-server except the youngest (smallest etime).
+    # Safe: panes live in the Herdr server; a phone just reconnects fresh.
+    /bin/ps -axo pid=,ppid=,etime=,comm= | /usr/bin/awk '
+      $2 == 1 && $4 ~ /mosh-server$/ {
+        e = $3; d = 0
+        if (e ~ /-/) { split(e, dd, "-"); d = dd[1]; e = dd[2] }
+        n = split(e, t, ":")
+        s = (n == 3) ? ((d*24 + t[1])*3600 + t[2]*60 + t[3]) : (d*86400 + t[1]*60 + t[2])
+        print s, $1
+      }' | /usr/bin/sort -n | /usr/bin/awk 'NR > 1 {print $2}' | /usr/bin/xargs kill 2>/dev/null
+    exit 0 ;;
 esac
 
 IP="$(/usr/sbin/ipconfig getifaddr en0 2>/dev/null || /usr/sbin/ipconfig getifaddr en1 2>/dev/null)"
@@ -69,14 +81,48 @@ if /usr/bin/nc -z -G 2 localhost 22 >/dev/null 2>&1; then SSH_ON=1; else SSH_ON=
 WHO="$(/usr/bin/who | /usr/bin/awk '/\(/ { match($0, /\(.*\)/); print $1"\t"substr($0, RSTART+1, RLENGTH-2) }' | /usr/bin/sort -u)"
 SSH_CONNS="$(printf '%s\n' "$WHO" | /usr/bin/grep -v $'\t''mosh' | /usr/bin/grep .)"
 NSSH=0; [ -n "$SSH_CONNS" ] && NSSH="$(printf '%s\n' "$SSH_CONNS" | /usr/bin/grep -c .)"
-NMOSH="$(/bin/ps -axo ppid,comm | /usr/bin/awk '$1 == 1 && $2 ~ /mosh-server$/ {n++} END {print n+0}')"
+MOSH_PIDS="$(/bin/ps -axo pid,ppid,comm | /usr/bin/awk '$2 == 1 && $3 ~ /mosh-server$/ {print $1}')"
+NMOSH=0; [ -n "$MOSH_PIDS" ] && NMOSH="$(printf '%s\n' "$MOSH_PIDS" | /usr/bin/grep -c .)"
+
+# Mosh is connectionless: a suspended phone and a dead client look the same,
+# so "connected" is really "traffic since the last poll". Sample per-process
+# byte counters (nettop) and diff them against the previous poll's state.
+STATE="$HOME/.cache/swiftbar-ssh30s.mosh"
+NMOSH_ACT=0; MOSH_ROWS=""
+if [ "$NMOSH" -gt 0 ]; then
+  /bin/mkdir -p "$HOME/.cache"
+  PFLAGS=""; for p in $MOSH_PIDS; do PFLAGS="$PFLAGS -p $p"; done
+  NOW="$(/usr/bin/nettop -x -L 1 -P $PFLAGS -J bytes_in,bytes_out 2>/dev/null \
+    | /usr/bin/awk -F, '$1 ~ /^mosh-server\./ {split($1, a, "."); print a[2], $2 + $3}')"
+  for p in $MOSH_PIDS; do
+    up="$(/bin/ps -o etime= -p "$p" | /usr/bin/tr -d ' ')"
+    new="$(printf '%s\n' "$NOW" | /usr/bin/awk -v p="$p" '$1 == p {print $2}')"
+    old="$(/usr/bin/awk -v p="$p" '$1 == p {print $2}' "$STATE" 2>/dev/null)"
+    if [ -n "$new" ] && [ "$new" != "$old" ]; then
+      NMOSH_ACT=$((NMOSH_ACT + 1))
+      MOSH_ROWS="$MOSH_ROWS
+$USER via mosh — active (up $up) | sfimage=iphone.radiowaves.left.and.right sfcolor=#5BB974 sfsize=12 size=13"
+    else
+      MOSH_ROWS="$MOSH_ROWS
+$USER via mosh — quiet (up $up) | sfimage=iphone.slash sfcolor=#98989D sfsize=12 size=13"
+    fi
+  done
+  printf '%s\n' "$NOW" > "$STATE"
+else
+  /bin/rm -f "$STATE" 2>/dev/null
+fi
 NCONN=$((NSSH + NMOSH))
+NACT=$((NSSH + NMOSH_ACT))
 
 # Same laptop glyph in every state — open lock = reachable, closed = off.
+# Green count = sessions with traffic since last poll; gray count = only
+# quiet sessions (suspended phone or stale server — mosh can't tell).
 # Closed lock + count = sshd off but mosh sessions still alive.
 if [ "$SSH_ON" = 1 ]; then
-  if [ "$NCONN" -gt 0 ]; then
-    echo "$NCONN | sfimage=lock.open.laptopcomputer sfcolor=#5BB974 sfsize=13 size=12"
+  if [ "$NACT" -gt 0 ]; then
+    echo "$NACT | sfimage=lock.open.laptopcomputer sfcolor=#5BB974 sfsize=13 size=12"
+  elif [ "$NCONN" -gt 0 ]; then
+    echo "$NCONN | sfimage=lock.open.laptopcomputer sfcolor=#98989D sfsize=13 size=12"
   else
     echo "| sfimage=lock.open.laptopcomputer sfcolor=#98989D sfsize=13"
   fi
@@ -94,8 +140,9 @@ print_conns() {
       echo "$user from $host | sfimage=iphone sfcolor=#E8A33D sfsize=12 size=13"
     done <<<"$SSH_CONNS"
   fi
-  if [ "$NMOSH" -gt 0 ]; then
-    echo "$USER via mosh × $NMOSH | sfimage=iphone.radiowaves.left.and.right sfcolor=#E8A33D sfsize=12 size=13"
+  [ -n "$MOSH_ROWS" ] && printf '%s\n' "$MOSH_ROWS" | /usr/bin/grep .
+  if [ "$NMOSH" -gt 1 ]; then
+    echo "Kill all but newest mosh session | sfimage=trash sfcolor=#E35D6A sfsize=12 size=13 bash=\"$0\" param1=cleanmosh terminal=false refresh=true"
   fi
 }
 
@@ -114,7 +161,13 @@ if [ "$SSH_ON" = 1 ]; then
   echo "Remote Login on — ${IP:-no network} | sfimage=checkmark.shield.fill sfcolor=#5BB974 sfsize=12 size=13"
   print_tailscale
   if [ "$NCONN" -gt 0 ]; then
-    echo "Active connections: $NCONN | sfimage=person.2.fill sfcolor=#E8A33D sfsize=12 size=13"
+    NQUIET=$((NMOSH - NMOSH_ACT))
+    LBL="Active connections: $NACT"; [ "$NQUIET" -gt 0 ] && LBL="$LBL (+$NQUIET quiet)"
+    if [ "$NACT" -gt 0 ]; then
+      echo "$LBL | sfimage=person.2.fill sfcolor=#E8A33D sfsize=12 size=13"
+    else
+      echo "$LBL | sfimage=person.2 sfcolor=#98989D sfsize=12 size=13"
+    fi
     print_conns
   else
     echo "Active connections: 0 | color=gray size=13"

@@ -190,10 +190,19 @@ localhost:22" (`nc`), which needs no privileges. Mosh sessions are counted
 as mosh-server processes reparented to PID 1 — a real session runs
 detached (ppid 1, no controlling tty), exactly one such process per
 session. Neither `who` nor a tty check sees them, and a raw pgrep
-double-counts locally spawned servers. Caveat: mosh-server never exits
-when a client silently vanishes (network switch, dead phone), so a stale
-session keeps counting until killed (`pgrep -x mosh-server`, `kill <pid>`
-— panes are safe, they live in the Herdr server). Tailscale detection tries the CLI (GUI
+double-counts locally spawned servers.
+
+Mosh is connectionless, so the server genuinely cannot tell a suspended
+phone from a dead client — and mosh-server never exits when a client
+silently vanishes, so stale servers pile up across hard reconnects. The
+plugin handles both honestly: it samples per-process byte counters
+(nettop) each poll and diffs against the previous poll (state file in
+`~/.cache/swiftbar-ssh30s.mosh`), marking each session **active** (green,
+traffic since last poll) or **quiet** (gray — suspended phone or stale
+server, with its uptime shown). The menu bar shows the active count in
+green, or the total in gray when everything is quiet. With more than one
+mosh session, a "Kill all but newest mosh session" row cleans up — safe,
+since panes live in the Herdr server and a phone just reconnects fresh. Tailscale detection tries the CLI (GUI
 app bundle, then brew paths) and falls back to spotting the 100.x CGNAT
 address on a utun interface; the CLI call is capped at 3s via a perl
 alarm because the GUI app's CLI hangs when the daemon isn't running
