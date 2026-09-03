@@ -164,37 +164,72 @@ apply on the next refresh.
 
 ### SSH companion (`swiftbar/ssh.30s.sh`)
 
-Shows whether the Mac is reachable for the phone-piloting flow (SSH in from
-the phone, run `herdr` — see "Piloting from a phone" below):
+Shows whether the Mac is reachable for the phone-piloting flow (ssh or mosh
+in from the phone, run `herdr` — see "Piloting from a phone" below):
 
 - **Icon**: one laptop-lock glyph in every state — open lock (gray) =
   Remote Login on, no one connected; open lock (green) + count = active
-  SSH sessions; closed lock = Remote Login off.
-- **Dropdown**: status + LAN IP, one row per connected client (user + source
-  host, from `who`), a "Copy: ssh user@ip" row, and a Turn SSH on/off toggle.
-  The toggle drives sshd via `launchctl enable/disable + bootstrap/bootout`
-  behind macOS's admin-password dialog (osascript). It deliberately avoids
-  `systemsetup -setremotelogin`, which requires Full Disk Access on top of
-  root (macOS 13+) and fails silently from SwiftBar. Toggle failures
-  surface as a notification.
+  sessions (ssh + mosh); closed lock = Remote Login off; closed lock
+  (orange) + count = Remote Login off but mosh sessions still alive (an
+  established mosh session survives sshd being turned off — the icon
+  won't claim "unreachable" while a phone is still attached).
+- **Dropdown**, top to bottom: Remote Login status + LAN IP, Tailscale
+  status + tailnet IP (green when up, gray when off / not installed), an
+  "Active connections: N" count, then one row per connected ssh client
+  (user + source host, from `who`) and a "via mosh × N" row for mosh
+  sessions. Below that, copy rows — "Copy: mosh/ssh user@tailnet-ip" when
+  Tailscale is up, plus the "(LAN)" variants — and a Turn SSH on/off
+  toggle. The toggle drives sshd via `launchctl enable/disable +
+  bootstrap/bootout` behind macOS's admin-password dialog (osascript). It
+  deliberately avoids `systemsetup -setremotelogin`, which requires Full
+  Disk Access on top of root (macOS 13+) and fails silently from SwiftBar.
+  Toggle failures surface as a notification.
 
 No dependencies; the on/off check is just "is anything listening on
-localhost:22" (`nc`), which needs no privileges.
+localhost:22" (`nc`), which needs no privileges. Mosh sessions are counted
+as mosh-server processes reparented to PID 1 — a real session runs
+detached (ppid 1, no controlling tty), exactly one such process per
+session. Neither `who` nor a tty check sees them, and a raw pgrep
+double-counts locally spawned servers. Caveat: mosh-server never exits
+when a client silently vanishes (network switch, dead phone), so a stale
+session keeps counting until killed (`pgrep -x mosh-server`, `kill <pid>`
+— panes are safe, they live in the Herdr server). Tailscale detection tries the CLI (GUI
+app bundle, then brew paths) and falls back to spotting the 100.x CGNAT
+address on a utun interface; the CLI call is capped at 3s via a perl
+alarm because the GUI app's CLI hangs when the daemon isn't running
+(macOS ships no `timeout`).
 
 ## Piloting from a phone
 
 No app needed — the Herdr session server keeps panes alive, so any SSH
-client attaches to the same session:
+client attaches to the same session. Prefer **mosh** over plain ssh from a
+phone: the connection survives the phone locking, Wi-Fi↔cellular switches,
+and IP roaming, and predictive local echo makes typing feel instant on a
+laggy link. The division of labor: Herdr keeps the *panes* alive, mosh
+keeps the *connection* alive.
 
-1. Mac: enable Remote Login (System Settings → General → Sharing, or
-   `sudo systemsetup -setremotelogin on`).
-2. Phone (same Wi-Fi): any SSH client (moshi/Termius/Blink), then
-   `ssh <user>@<mac-ip>` and `herdr` — the TUI adapts to narrow screens.
+1. Mac: enable Remote Login (System Settings → General → Sharing, or the
+   SwiftBar toggle) and `brew install mosh`. Mosh bootstraps over ssh
+   (auth, keys), then hands off to `mosh-server` on UDP 60000–61000 — so
+   Remote Login stays the master switch; the macOS application firewall
+   may prompt once to allow `mosh-server`.
+2. Phone (same Wi-Fi or tailnet): a mosh-capable client — Blink has the
+   best mosh support, Termius works too — then `mosh <user>@<mac-ip>` and
+   `herdr` (the SwiftBar dropdown has copy rows for both the tailnet and
+   LAN address; prefer the tailnet one, it works from anywhere and
+   survives switching networks). The TUI adapts to narrow screens. Plain
+   `ssh` still works from any client.
 3. Detach with `Ctrl+B q`; reattach later from anywhere with `herdr`.
 
+Mosh caveats: no port/agent forwarding (fall back to ssh for tunnels), and
+no native scrollback — irrelevant inside Herdr, which scrolls itself. Note
+an established mosh session outlives the SSH toggle being turned off (it's
+independent UDP once bootstrapped); the SwiftBar icon shows an orange
+closed-lock count for that state.
+
 Hardening: restrict Remote Login to your user in the Sharing pane, prefer
-key auth over passwords, never port-forward 22 on the router — use
-Tailscale for access beyond the LAN.
+key auth over passwords, never port-forward 22 (or the mosh UDP range) on
+the router — use Tailscale for access beyond the LAN.
 
 ## Sessions and the `h` function
 
