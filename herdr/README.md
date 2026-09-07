@@ -110,7 +110,7 @@ variants in `~/.config/ghostty/themes/`:
 
 - **mocha-custom** (dark): very dark `#151517` background, stock Mocha
   pastels slightly intensified, pink accents on palette 6/14.
-- **latte-custom** (light): grey `#E0E0E3` background (not white), dark
+- **latte-custom** (light): grey `#DCDCE1` background (not white), dark
   foreground for contrast, vivid max-saturation palette with soft pastel
   greens, orange selection.
 
@@ -124,7 +124,7 @@ appearance, switching between `catppuccin-latte` (light) and `catppuccin`
 Mocha (dark) — the same pair Ghostty uses. `panel_bg = "reset"` keeps the
 pane area transparent so Ghostty's real background shows through (the
 mocha-custom very-dark `#151517` in dark mode, the latte-custom grey
-`#E0E0E3` in light) instead of Herdr repainting it with stock Catppuccin.
+`#DCDCE1` in light) instead of Herdr repainting it with stock Catppuccin.
 
 Limitation: `[theme.custom]` overrides apply in both modes (no
 `theme.custom.dark`/`.light` as of 0.8.2), so the mocha-custom saturation

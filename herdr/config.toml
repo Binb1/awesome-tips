@@ -15,6 +15,14 @@ light_name = "catppuccin-latte"
 
 [theme.custom]
 panel_bg = "reset"
+# Dim sidebar text (agent kind labels etc.): Latte's overlays are unreadable
+# on the darkened latte-custom background; these sit at Mocha's overlay
+# darkness, which reads fine in BOTH modes (theme.custom applies to both).
+overlay0 = "#6e7286"
+overlay1 = "#7a7e94"
+# Kill the Catppuccin teal chips (worktree/branch labels on pane borders):
+# align with the palette's azure instead.
+teal = "#2E9BE0"
 
 [keys]
 # Workspaces are the per-project unit; give them the plain digits
