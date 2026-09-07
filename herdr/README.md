@@ -41,7 +41,7 @@ herdr integration status
 
 # 4b. Optional: menu bar agent status + SSH toggle (see "Menu bar" below)
 brew install --cask swiftbar
-cp herdr/swiftbar/herdr.5s.sh ~/Documents/SwiftBar/   # or wherever SwiftBar's plugin folder is
+cp herdr/swiftbar/herdr.stream.sh ~/Documents/SwiftBar/   # or wherever SwiftBar's plugin folder is
 cp herdr/swiftbar/ssh.30s.sh ~/Documents/SwiftBar/
 
 # 5. Shell helpers — add to the end of ~/.zshrc
@@ -68,7 +68,7 @@ config reload is not enough).
 | Herdr skill for Claude Code | `~/.claude/skills/herdr` |
 | Shell helpers (`h` function + orange-cursor hook) | end of `~/.zshrc` |
 | Ghostty custom themes (latte-custom / mocha-custom) | `~/.config/ghostty/themes/` |
-| SwiftBar menu bar plugin | SwiftBar plugin folder (copy of `herdr/swiftbar/herdr.5s.sh`) |
+| SwiftBar menu bar plugin | SwiftBar plugin folder (copy of `herdr/swiftbar/herdr.stream.sh`) |
 
 The hook and the skill are managed by `herdr integration` — don't edit them,
 reinstalling overwrites both.
@@ -110,7 +110,7 @@ variants in `~/.config/ghostty/themes/`:
 
 - **mocha-custom** (dark): very dark `#151517` background, stock Mocha
   pastels slightly intensified, pink accents on palette 6/14.
-- **latte-custom** (light): grey `#E0E0E3` background (not white), dark
+- **latte-custom** (light): grey `#DCDCE1` background (not white), dark
   foreground for contrast, vivid max-saturation palette with soft pastel
   greens, orange selection.
 
@@ -124,7 +124,7 @@ appearance, switching between `catppuccin-latte` (light) and `catppuccin`
 Mocha (dark) — the same pair Ghostty uses. `panel_bg = "reset"` keeps the
 pane area transparent so Ghostty's real background shows through (the
 mocha-custom very-dark `#151517` in dark mode, the latte-custom grey
-`#E0E0E3` in light) instead of Herdr repainting it with stock Catppuccin.
+`#DCDCE1` in light) instead of Herdr repainting it with stock Catppuccin.
 
 Limitation: `[theme.custom]` overrides apply in both modes (no
 `theme.custom.dark`/`.light` as of 0.8.2), so the mocha-custom saturation
@@ -133,12 +133,12 @@ boost can't be mirrored onto the sidebar chrome without breaking light mode
 
 ## Menu bar (SwiftBar)
 
-`swiftbar/herdr.5s.sh` is a SwiftBar plugin that shows agent states in the
-macOS menu bar — the thing the sidebar can't do when Ghostty is hidden.
+`swiftbar/herdr.stream.sh` is a SwiftBar plugin that shows agent states in
+the macOS menu bar — the thing the sidebar can't do when Ghostty is hidden.
 
 - **Icon**: the sheep, plus the loudest state — `🐑 ❗N` agents blocked
-  (need input) > `🐑 ✓ N` done > `🐑 N` working > `🐑` all idle > `🐑 –`
-  server not running.
+  (need input) > `🐑 ✓ N` done > `🐑 ⠧ N` working (animated spinner) >
+  `🐑` all idle > `🐑 –` server not running.
 - **Dropdown**: one row per agent (colored status dot, workspace label,
   pane title); clicking a row focuses that workspace and raises Ghostty.
 - **Ghostty icon switching**: each poll checks macOS appearance and
@@ -153,14 +153,19 @@ macOS menu bar — the thing the sidebar can't do when Ghostty is hidden.
   after a close shifts positions. The base name after `N. ` is untouched,
   so manual renames survive.
 
-Data comes from `herdr api snapshot` (polled; the `.5s.` in the filename is
-the interval — rename to change it), clicks go through
+This is a SwiftBar **streamable** plugin (`<swiftbar.type>streamable</swiftbar.type>`):
+SwiftBar keeps it running as a resident process and it pushes a new menu
+(preceded by a `~~~` line) only when something changes. That's what lets
+the working-state spinner animate at 2 fps while `herdr api snapshot` is
+still only polled every 5s (`SPIN_TICK` / `POLL` in the script) — and when
+nothing changes, nothing is emitted at all. Clicks go through
 `herdr workspace focus`, renumbering through `herdr workspace rename`.
 Needs `jq`. Covers the default session only.
 
 Setup: `brew install --cask swiftbar`, launch it once to pick a plugin
-folder, copy the script there, make sure it's executable. Edits to the copy
-apply on the next refresh.
+folder, copy the script there, make sure it's executable. Streamable
+plugins are relaunched on refresh — after editing the copy, run
+`open -g "swiftbar://refreshallplugins"` (a plain poll won't pick it up).
 
 ### SSH companion (`swiftbar/ssh.30s.sh`)
 
@@ -207,6 +212,38 @@ app bundle, then brew paths) and falls back to spotting the 100.x CGNAT
 address on a utun interface; the CLI call is capped at 3s via a perl
 alarm because the GUI app's CLI hangs when the daemon isn't running
 (macOS ships no `timeout`).
+
+### Menu bar crowding
+
+With two plugin icons (plus Tailscale, etc.) the menu bar fills up fast,
+and macOS gives you no overflow UI: on a notched MacBook, icons that
+don't fit silently vanish behind the notch — if a plugin "disappears" but
+its script runs fine, it's crowding, not a bug. Cmd+drag reorders icons
+(park the 🐑 and the lock next to the clock so they always fit) or
+removes system ones; Control Center items can be hidden via System
+Settings → Control Center ("Don't Show in Menu Bar" — they stay one
+click away inside Control Center).
+
+To fit more before that happens, shrink the per-icon padding (hidden
+global defaults, stock is ~16px; 10 is comfortable, 6 is the practical
+floor before icons get hard to click):
+
+```bash
+defaults -currentHost write -globalDomain NSStatusItemSpacing -int 10
+defaults -currentHost write -globalDomain NSStatusItemSelectionPadding -int 10
+# revert: same commands with `delete` instead of `write -int 10`
+```
+
+Takes effect at the next log out/in. Gotcha observed on macOS 26: after
+a logout, cfprefsd can wedge on the ByHost prefs file (it quarantines
+its own plist, then reports the whole Apple Global Domain as
+nonexistent while the file sits intact on disk; `defaults` writes fail
+with "Could not write domain"). When that happens, edit the file
+directly — `plutil -replace NSStatusItemSpacing -integer 10
+~/Library/Preferences/ByHost/.GlobalPreferences.<hardware-UUID>.plist`
+— strip the quarantine xattr, and let the next login's fresh cfprefsd
+pick it up. Beyond spacing, a menu bar manager (Ice, free/open source,
+or Bartender) adds a real overflow area.
 
 ## Piloting from a phone
 
