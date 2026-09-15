@@ -32,6 +32,40 @@ switch_tab = "alt+1..9"
 
 [ui]
 show_agent_labels_on_pane_borders = true
+# Uniform filled color dots per agent state (working=orange, done=green,
+# blocked=red) - same-size circles, no half-moon glyphs ("symbols" mode
+# renders working as a wide ◐, which looked off).
+status_indicators = "dots"
+# Optional: flat attention queue instead of grouping agents under their
+# workspace headers (blocked bubbles to the top). Off because the workspace
+# grouping is what tells entries apart across projects.
+# agent_panel_sort = "priority"
+
+# Session-bar rows for Claude panes: task title (from the terminal title
+# Claude Code sets), plus one line for git branch (orange) / active subagent.
+# $branch / $worker are display-only pane metadata tokens fed by the custom
+# Claude Code hook ~/.claude/hooks/herdr-sidebar-tokens.sh (registered in
+# ~/.claude/settings.json — NOT managed by `herdr integration`). The hook
+# suppresses main/master, so most entries stay a single title line.
+[ui.sidebar.agents]
+row_gap = 0
+
+[ui.sidebar.agents.rows_by_agent]
+claude = [
+  ["state_icon", { token = "$spin", fg = "#F8BC82" }, { token = "terminal_title", bold = true }],
+  [{ token = "$branch", fg = "#FAB387" }, { token = "$worker", dim = true }],
+]
+
+# Space (workspace) rows get the same session-bar look: state glyph + bold
+# name, then the git branch in orange with a dim status summary — the
+# workspace-level analog of the screenshot's "task name / #issue" pairs.
+# branch and git_status are Herdr built-ins here, no hook involved.
+[ui.sidebar.spaces]
+row_gap = 0
+rows = [
+  ["state_icon", { token = "workspace", bold = true }],
+  [{ token = "branch", fg = "#FAB387" }, { token = "git_status", dim = true }],
+]
 
 # Command palette (binb1.palette) — prefix+f (prefix+p is previous_tab)
 [[keys.command]]
@@ -47,3 +81,4 @@ key = "cmd+p"
 type = "plugin_action"
 command = "binb1.palette.open"
 description = "Command palette"
+
