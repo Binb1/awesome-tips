@@ -152,9 +152,9 @@ const state = {
 // stay readable as a whole sentence, not just legible as a mark.
 const stateByVariant = {
   light: {
-    idleFresh: '#416c4f',
+    idleFresh: '#4c9a5a', // robin fork: same green as `done` — upstream's darker #416c4f read as a third colour
     idleNormal: '#6b6259',
-    idleStale: '#a4a5a9',
+    idleStale: '#8e9097', // robin fork: upstream #a4a5a9 washes out on a #DCDCE1 panel
   },
   dark: {
     idleFresh: '#95bba2',

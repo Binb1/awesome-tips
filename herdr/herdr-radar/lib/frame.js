@@ -114,7 +114,7 @@ class Frame {
     const entries = await state.snapshot();
     if (entries === null) return null;
     // Labels are always needed: the workspace list drives the Spaces marks.
-    const { tabs, workspaces, parents, worktrees } = await state.labels(now);
+    const { tabs, wsTabs, workspaces, parents, worktrees } = await state.labels(now);
     // Deadlines this frame discovers; the scheduler sleeps to the earliest.
     const deadlines = [];
     // Every write this frame goes into one parallel batch.
@@ -144,14 +144,34 @@ class Frame {
     const live = new Set();
     // workspace -> the display states of its live agents, for the Spaces marks.
     const wsAgents = new Map();
+    // robin fork: workspace -> tab -> its agents' displays, for the tab rows.
+    const wsTabAgents = new Map();
     const spinStep = Math.floor(now / SPIN_MS);
+
+    // robin fork: displays first, panes second — a parked pane in a workspace
+    // where another pane is working is painted in the working colour (the
+    // whole group lights up), and that is only known once every display is.
+    const displays = new Map();
+    const hotWorkspaces = new Set();
+    for (const entry of entries) {
+      const display = this.displayFor(entry, now, deadlines);
+      displays.set(entry.pane, display);
+      if (entry.workspace && display === 'working') hotWorkspaces.add(entry.workspace);
+    }
 
     for (const entry of entries) {
       live.add(entry.pane);
-      const display = this.displayFor(entry, now, deadlines);
+      const display = displays.get(entry.pane);
+      const hot = Boolean(entry.workspace) && hotWorkspaces.has(entry.workspace);
       if (entry.workspace) {
         if (!wsAgents.has(entry.workspace)) wsAgents.set(entry.workspace, []);
         wsAgents.get(entry.workspace).push({ display, name: entry.name });
+        if (entry.tab) {
+          if (!wsTabAgents.has(entry.workspace)) wsTabAgents.set(entry.workspace, new Map());
+          const byTab = wsTabAgents.get(entry.workspace);
+          if (!byTab.has(entry.tab)) byTab.set(entry.tab, []);
+          byTab.get(entry.tab).push({ display, name: entry.name, title: entry.title });
+        }
       }
       // Herdr indents an entry's continuation rows for us. A head pane's state
       // line is row 2 and arrives indented already; a member's empty header
@@ -174,11 +194,11 @@ class Frame {
       // The header text this row will sit under, for the prefix trim. Empty
       // in the flat view: nothing is repeated there.
       const header = grouped && config.trimGroupPrefix ? (workspaces.get(entry.workspace) ?? '') : '';
-      this.paneJobs(entry, display, { tabs, keys, indent, corner, spinStep, header }, now, deadlines, jobs);
+      this.paneJobs(entry, display, { tabs, keys, indent, corner, spinStep, header, hot }, now, deadlines, jobs);
     }
 
     this.clearGone(live, now, jobs);
-    this.spaceJobs(wsAgents, workspaces, now, jobs);
+    this.spaceJobs(wsAgents, workspaces, { wsTabs: wsTabs ?? new Map(), wsTabAgents, hotWorkspaces, spinStep }, now, jobs);
     await this.groupJobs(entries, displayEntries, viewMode, grouped, wsAgents, workspaces, keys, now, deadlines);
     await Promise.all(jobs);
 
@@ -440,7 +460,7 @@ class Frame {
 
   // The three token families a pane carries — vendor logo, state line, sort
   // keys — each written only when it changed since the last successful write.
-  paneJobs(entry, display, { tabs, keys, indent, corner = '', spinStep, header = '' }, now, deadlines, jobs) {
+  paneJobs(entry, display, { tabs, keys, indent, corner = '', spinStep, header = '', hot = false }, now, deadlines, jobs) {
     const pane = entry.pane;
     const src = this.src;
 
@@ -467,10 +487,10 @@ class Frame {
     // skipping the write leaves the old token up — or, on a pane that had
     // none, no state row at all, which renders its bare title at the margin
     // looking like a group header.
-    const key = line ? `${display}:${line.mark}:${line.split}:${line.logo}:${line.titlePrefix}:${title}` : '';
+    const key = line ? `${display}:${hot ? 'hot' : ''}:${line.mark}:${line.split}:${line.logo}:${line.titlePrefix}:${title}` : '';
     if (this.lastLine.get(pane) !== key && this.writable(`line:${pane}`, now)) {
       // Send the difference, not the whole set: see state.stateTokens.
-      const tokens = line ? state.stateTokens(display, line, title) : null;
+      const tokens = line ? state.stateTokens(display, line, title, hot) : null;
       // The first write to a pane in this daemon's life sends the whole set,
       // nulls included: the pane may still carry names an earlier daemon left
       // on it — a title under a state it is no longer in, say — and a delta
@@ -552,7 +572,7 @@ class Frame {
   // Priority is urgency: a question beats activity beats an unseen result
   // beats parked. The per-pane displays already carry the idle grace and the
   // held done badge, so the aggregate inherits both for free.
-  spaceJobs(wsAgents, workspaces, now, jobs) {
+  spaceJobs(wsAgents, workspaces, { wsTabs, wsTabAgents, hotWorkspaces, spinStep }, now, jobs) {
     const src = this.src;
     const wsIds = new Set(workspaces.keys());
     for (const ws of wsAgents.keys()) wsIds.add(ws);
@@ -560,20 +580,30 @@ class Frame {
       const agents = wsAgents.get(ws) ?? [];
       let chosen = 'none';
       let vendor = '';
+      // robin fork: the three idle tiers all count as idle here — upstream's
+      // exact match on 'idle' left a workspace of fresh or stale panes unmarked.
       for (const p of ['blocked', 'working', 'done', 'idle', 'unknown']) {
-        const hit = agents.find((a) => a.display === p);
+        const hit = agents.find((a) => (p === 'idle' ? a.display.startsWith('idle') : a.display === p));
         if (hit) {
           chosen = p;
           vendor = hit.name;
           break;
         }
       }
+      // robin fork: a workspace whose every session is stale is "completely
+      // idle" and takes the grey ring of an empty one, not the blue of parked.
+      if (chosen === 'idle' && agents.every((a) => a.display === 'idle_stale')) chosen = 'none';
       const token =
         chosen === 'working'
           ? `space_working_${palette.brandVendors.includes(vendor) ? vendor : 'other'}`
           : `space_${chosen}`;
-      const glyph = state.spaceMark(chosen);
+      const glyph = state.spaceMark(chosen, Math.floor(now / SPIN_MS));
       const logos = state.spaceLogoTokens(agents);
+      // robin fork: the tab rows ride along with the logo tokens.
+      Object.assign(
+        logos,
+        state.spaceTabTokens(wsTabs.get(ws) ?? [], wsTabAgents.get(ws) ?? new Map(), hotWorkspaces.has(ws), spinStep),
+      );
       const label = workspaces.get(ws) ?? ws;
       const key = `${token}:${glyph}:${Object.values(logos).join(',')}:${label}`;
       if (this.lastSpace.get(ws) !== key && this.writable(`space:${ws}`, now)) {

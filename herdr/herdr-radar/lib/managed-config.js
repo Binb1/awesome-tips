@@ -219,7 +219,8 @@ function applyAppearance(variant) {
 // user's `[colors]` overrides applied. An empty override drops the token, so
 // the theme's own value shows through.
 function chromeTokens(variant) {
-  const tokens = { ...palette.chrome[variant] };
+  // User `[chrome]` tokens first, so the palette's own keys still win on a clash.
+  const tokens = { ...config.chrome, ...palette.chrome[variant] };
   const override = config.activeRowBg[variant];
   if (override !== undefined) {
     if (override) tokens.active_row_bg = override;
@@ -422,7 +423,8 @@ function sidebarBlock(variant) {
         // glyph but not a sentence. Working is also the one title that bolds:
         // a panel this long is scanned, and weight answers "which of these is
         // still going?" before colour does.
-        cell('$title_working', brand[vendor] ?? brand.other, true),
+        // robin fork: titles are never bold — the colour already says "working".
+        cell('$title_working', brand[vendor] ?? brand.other),
         cell('$title_done', state.done),
         cell('$title_blocked', state.blocked),
         cell('$title_idle_fresh', state.idleFresh),
@@ -465,14 +467,29 @@ function sidebarBlock(variant) {
     ...palette.brandVendors.map((vendor) => cell(`$space_working_${vendor}`, brand[vendor], true)),
     cell('$space_working_other', brand.other, true),
     cell('$space_done', state.done, true),
-    cell('$space_idle', state.idle),
+    // robin fork: a parked session is a small blue ring (the config's azure accent).
+    cell('$space_idle', '#2E9BE0'),
     cell('$space_unknown', state.unknown),
     cell('$space_none', state.none),
     // The workspace name is a token we publish rather than Herdr's built-in
     // `workspace` cell, so the whole Spaces row is under the plugin's control
     // (colour today; anything rendered into the label tomorrow).
-    cell('$space_label', state.none),
+    // Same style as an agents group header, whatever the state.
+    cell('$space_label', state.subtle, true),
   ];
+  // robin fork: one row per tab — the vendor mark (brand colour by rule, as
+  // the agent row's `$logo`), then the tab label under its state's token.
+  const spaceTabRows = Array.from({ length: 3 }, (_, i) => i + 1).map(
+    (i) =>
+      `  [\n    ${[
+        logoCell(`$space_tab${i}_logo`, glyphs, ink),
+        ...palette.brandVendors.map((vendor) => cell(`$space_tab${i}_working_${vendor}`, brand[vendor])),
+        cell(`$space_tab${i}_working_other`, brand.other),
+        cell(`$space_tab${i}_done`, state.done),
+        cell(`$space_tab${i}_blocked`, state.blocked),
+        cell(`$space_tab${i}_idle`, state.idleNormal),
+      ].join(',\n    ')}\n  ]`,
+  );
   const spaceLogos = [
     ...palette.brandVendors.map((vendor) => cell(`$space_logo_${vendor}`, brand[vendor])),
     // Same rule as the Agents logo cell: a mark with no hue of its own is
@@ -513,7 +530,13 @@ function sidebarBlock(variant) {
     // of them is a lot of air beside a two-row entry — the logo row already
     // reads as the end of an entry.
     'row_gap = 0',
-    `rows = [\n  [\n    ${spaceMarks.join(',\n    ')}\n  ],\n  [\n    ${spaceLogos.join(',\n    ')}\n  ]\n]`,
+    // robin fork: row one is the workspace's aggregate mark (spinner in the
+    // vendor colour, green tick, red ?, blue ring for parked, nothing when
+    // empty — see state.spaceMark) and the name in the agents group-header
+    // style (`$group`: subtle grey, bold) whatever the state. Then one row per
+    // tab (see spaceTabRows). The vendor logos+names are still published under
+    // $space_logo_* / $space_names, unrendered.
+    `rows = [\n  [\n    ${spaceMarks.join(',\n    ')}\n  ],\n${spaceTabRows.join(',\n')}\n]`,
     SIDEBAR_END,
   ].join('\n');
 }

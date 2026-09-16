@@ -280,8 +280,16 @@ function worktreeParents(list) {
 async function labels(now) {
   if (now - cache.at < LABEL_TTL_MS && cache.tabs.size > 0) return cache;
   const tabs = new Map();
-  for (const tab of await herdr.tabsAsync()) {
-    if (typeof tab.tab_id === 'string' && typeof tab.label === 'string') tabs.set(tab.tab_id, tab.label);
+  // robin fork: each workspace's tabs in tab order, for the Spaces tab rows.
+  const wsTabs = new Map();
+  const tabList = (await herdr.tabsAsync()).slice().sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
+  for (const tab of tabList) {
+    if (typeof tab.tab_id !== 'string' || typeof tab.label !== 'string') continue;
+    tabs.set(tab.tab_id, tab.label);
+    if (typeof tab.workspace_id === 'string') {
+      if (!wsTabs.has(tab.workspace_id)) wsTabs.set(tab.workspace_id, []);
+      wsTabs.get(tab.workspace_id).push({ id: tab.tab_id, label: tab.label });
+    }
   }
   const list = await herdr.workspacesAsync();
   const workspaces = new Map();
@@ -294,7 +302,7 @@ async function labels(now) {
     }
   }
   const { parents, worktrees } = worktreeParents(list);
-  if (tabs.size > 0) Object.assign(cache, { at: now, tabs, workspaces, parents, worktrees });
+  if (tabs.size > 0) Object.assign(cache, { at: now, tabs, wsTabs, workspaces, parents, worktrees });
   return cache;
 }
 
@@ -451,14 +459,22 @@ function reportPane(source, pane, tokens) {
 // answers in its own time — at four working panes that was fifty writes a
 // second, which the server met with rising latency until the animation
 // stuttered.
-function stateTokens(display, line, title) {
+function stateTokens(display, line, title, hot = false) {
+  // robin fork: `hot` = another pane in this workspace is working. A parked
+  // pane then takes the working colour for its title and mark — the group
+  // reads as one active thing — while its own state mark (no spinner) still
+  // says which pane is actually running.
+  const parked = display === 'idle' || display === 'idle_fresh' || display === 'idle_stale';
+  const paint = hot && parked ? 'working' : display;
   const tokens = {};
   // One logo, under whichever name carries the style this frame needs. The
   // other three are cleared: which name holds the glyph is the whole signal.
   for (const name of LOGO_TOKENS) tokens[name] = null;
   tokens[SPLIT_TOKEN] = line.split || null;
   if (line.logo) {
-    const name = display === 'working' ? 'logo_working' : display === 'idle_stale' ? 'logo_stale' : 'logo';
+    // Brand colour while the session is live or merely parked; only a stale
+    // one (untouched past activity_stale_minutes) greys its mark, with its title.
+    const name = display === 'working' ? 'logo_working' : paint === 'working' ? 'logo' : display === 'idle_stale' ? 'logo_stale' : 'logo';
     tokens[name] = line.logo;
   }
   for (const state of STATES) {
@@ -467,7 +483,7 @@ function stateTokens(display, line, title) {
     // so a pane that has one from a previous version loses it.
     tokens[`name_${state}`] = null;
     tokens[`state_${state}`] = current ? line.mark : null;
-    tokens[`title_${state}`] = current && title ? line.titlePrefix + title : null;
+    tokens[`title_${state}`] = state === paint && title ? line.titlePrefix + title : null;
   }
   return tokens;
 }
@@ -675,13 +691,82 @@ const SPACE_TOKENS = [
   // few columns at the cost of painting every vendor the same grey.
   ...palette.brandVendors.map((vendor) => `space_logo_${vendor}`),
   'space_logo_other',
+  // robin fork: the vendor names, all in one cell — the logo cells above carry
+  // only the mark so it keeps its brand colour, and a name cell per vendor
+  // would push the row past Herdr's 16-cell limit.
+  'space_names',
+  // robin fork: one row per tab under the name (SPACE_TAB_ROWS of them):
+  // the vendor mark, then the tab label under the token for its state — the
+  // agent row's own `logo · title` shape, one level up.
+  ...Array.from({ length: 3 }, (_, i) => i + 1).flatMap((i) => [
+    `space_tab${i}_logo`,
+    ...palette.brandVendors.map((vendor) => `space_tab${i}_working_${vendor}`),
+    `space_tab${i}_working_other`,
+    `space_tab${i}_done`,
+    `space_tab${i}_blocked`,
+    `space_tab${i}_idle`,
+  ]),
   // The workspace name; see writeSpaceState for why it is published at all.
   'space_label',
 ];
+const SPACE_TAB_ROWS = 3;
 
-function spaceMark(display) {
-  if (display === 'none') return '·';
-  return stateGlyph(display) ?? '·';
+// robin fork: the tab rows of one workspace. `tabAgents` maps a tab id to the
+// displays of the agents in it; a tab with none is a parked line with no mark.
+// `hot` paints parked tabs in the working colour, as paneJobs does for panes.
+function spaceTabTokens(tabList, tabAgents, hot, spinStep) {
+  const out = {};
+  for (let i = 1; i <= SPACE_TAB_ROWS; i++) {
+    const tab = tabList[i - 1];
+    if (!tab) continue;
+    const agents = tabAgents.get(tab.id) ?? [];
+    // A tab never named shows Herdr's default, its number. That says nothing:
+    // use the agent's own session title instead when one lives in it, and
+    // leave the row out entirely when nothing does.
+    const unnamed = /^\d+$/.test(tab.label);
+    if (unnamed && agents.length === 0) continue;
+    let chosen = 'idle';
+    let lead = agents[0] ?? null;
+    for (const p of ['blocked', 'working', 'done']) {
+      const hit = agents.find((a) => a.display === p);
+      if (hit) {
+        chosen = p;
+        lead = hit;
+        break;
+      }
+    }
+    const vendor = lead?.name ?? '';
+    const label = unnamed ? lead?.title || tab.label : tab.label;
+    const logo = vendor ? logoFor(vendor) : null;
+    if (logo) out[`space_tab${i}_logo`] = logo;
+    const paint = chosen === 'idle' && hot ? 'working' : chosen;
+    // The agent row's mark, in front of the label: spinner, tick, question mark.
+    const mark =
+      chosen === 'working' ? config.FRAMES[spinStep % config.FRAMES.length]
+      : chosen === 'done' ? config.STATIC_GLYPH.done
+      : chosen === 'blocked' ? config.STATIC_GLYPH.blocked
+      : '';
+    const text = mark ? `${mark} ${label}` : label;
+    const token =
+      paint === 'working'
+        ? `space_tab${i}_working_${palette.brandVendors.includes(vendor) ? vendor : 'other'}`
+        : `space_tab${i}_${paint}`;
+    out[token] = text;
+  }
+  return out;
+}
+
+// robin fork: the Spaces marks mirror the agent rows — the same braille
+// spinner while something works (stepped by the caller so it animates), the
+// tick when done, and a ring otherwise: blue (`space_idle`) for a parked
+// session, grey (`space_none`) when the workspace is completely idle — every
+// session stale, or no agent in it at all.
+function spaceMark(display, spinStep = 0) {
+  if (display === 'working') return config.FRAMES[spinStep % config.FRAMES.length];
+  if (display === 'done') return config.STATIC_GLYPH.done;
+  if (display === 'blocked') return config.STATIC_GLYPH.blocked;
+  if (display === 'unknown') return config.STATIC_GLYPH.unknown;
+  return '○';
 }
 
 // Which vendor tokens a workspace shows, as logo + name. They live on their
@@ -696,18 +781,21 @@ function spaceLogoTokens(agents) {
   for (const vendor of palette.brandVendors) out[`space_logo_${vendor}`] = null;
   const seen = new Set();
   const others = [];
+  const names = [];
   for (const a of agents) {
     if (!a.name || seen.has(a.name)) continue;
     seen.add(a.name);
     const logo = logoFor(a.name);
-    // The vendor's own name is what a Spaces row has room for; the readable
-    // one belongs beside a title, where there is a sentence to share the line
-    // with.
-    const label = logo ? `${logo} ${a.name}` : a.name;
-    if (palette.brandVendors.includes(a.name)) out[`space_logo_${a.name}`] = label;
-    else others.push(label);
+    // robin fork: mark and name are separate cells (`✳ · claude`, the agent
+    // row's own shape) so the mark can stay in its brand colour while the name
+    // takes the quiet grey. A vendor without a mark contributes its name only.
+    names.push(a.name);
+    if (!logo) continue;
+    if (palette.brandVendors.includes(a.name)) out[`space_logo_${a.name}`] = logo;
+    else others.push(logo);
   }
   if (others.length > 0) out.space_logo_other = others.join(' ');
+  out.space_names = names.length > 0 ? names.join(' ') : null;
   return out;
 }
 
@@ -776,6 +864,8 @@ module.exports = {
   composeLine,
   clearState,
   spaceMark,
+  spaceTabTokens,
+  SPACE_TAB_ROWS,
   spaceLogoTokens,
   writeSpaceState,
   clearSpaceState,

@@ -156,6 +156,16 @@ module.exports = {
     dark: typeof colors.active_row_bg_dark === 'string' ? colors.active_row_bg_dark : undefined,
   },
 
+  // Extra `[theme.custom]` tokens written into the managed theme block on both
+  // appearances, verbatim (`panel_bg = "reset"`, `overlay0`, `teal`, …). The
+  // block is the only `[theme.custom]` that can exist alongside this plugin,
+  // and Herdr's own `[theme.custom.light]`/`.dark` tables stop applying once
+  // `auto_switch` is driven to false — so this is where those overrides go.
+  chrome:
+    typeof raw.chrome === 'object' && raw.chrome !== null
+      ? Object.fromEntries(Object.entries(raw.chrome).filter(([, v]) => typeof v === 'string' && v))
+      : {},
+
   // auto | font | text | none
   variant: typeof raw.variant === 'string' ? raw.variant : 'auto',
 
