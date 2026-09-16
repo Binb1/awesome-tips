@@ -22,9 +22,10 @@ brew install herdr
 mkdir -p ~/.config/herdr
 cp herdr/config.toml ~/.config/herdr/config.toml
 
-# 2b. Sidebar: our herdr-radar fork — see "Sidebar (herdr-radar, our fork)"
-#     for the clone + link + configure steps. Do it after step 3 (Ghostty
-#     config carries the font line) and install the two fonts it names.
+# 2b. Sidebar: the vendored herdr-radar plugin (herdr/herdr-radar) with our
+#     changes. Run AFTER step 3 (Ghostty config carries its font line) and
+#     after step 4 (server must be 0.9.0+). Links, settings, fonts, blocks, daemon.
+herdr/install-radar.sh
 
 # 3. Ghostty config (includes the Herdr keybinds at the bottom)
 #    + custom light/dark themes (latte-custom / mocha-custom)
@@ -69,9 +70,9 @@ config reload is not enough).
 | Herdr logs, session state, socket | `~/.config/herdr/` |
 | Ghostty config (keybinds at the bottom) | `~/Library/Application Support/com.mitchellh.ghostty/config` |
 | Claude Code integration hook (feeds agent states) | `~/.claude/hooks/herdr-agent-state.sh` |
-| herdr-radar plugin settings (`follow_appearance = false`) | `~/.config/herdr/plugins/config/hhdebb.herdr-radar/config.toml` |
-| herdr-radar plugin code + daemon state | `~/.config/herdr/plugins/github/hhdebb.herdr-radar-*/`, `~/.local/state/herdr/plugins/hhdebb.herdr-radar/` |
-| herdr-radar icon font | `~/Library/Fonts/HerdrAgentIconsMax-*.ttf` |
+| herdr-radar plugin settings (repo: `herdr/radar-config.toml`) | `~/.config/herdr/plugins/config/hhdebb.herdr-radar/config.toml` |
+| herdr-radar plugin code (linked, not copied) + daemon state | `herdr/herdr-radar/` in this checkout; `~/.local/state/herdr/plugins/hhdebb.herdr-radar/` |
+| herdr-radar fonts | `~/Library/Fonts/JetBrainsMonoHerdr-Regular.ttf`, `JetBrainsMonoHerdrSmall-Regular.ttf` (generated), `HerdrAgentIconsMax-*.ttf` (radar's own, unused by Ghostty) |
 | Herdr skill for Claude Code | `~/.claude/skills/herdr` |
 | Shell helpers (`h` function + orange-cursor hook) | end of `~/.zshrc` |
 | Ghostty custom themes (latte-custom / mocha-custom) | `~/.config/ghostty/themes/` |
@@ -143,7 +144,7 @@ tables are per-mode now, the old 0.8.2 limitation is gone — a mocha-custom
 saturation boost for the sidebar chrome could go in `.dark` alone without
 touching light mode.
 
-## Sidebar (herdr-radar, our fork)
+## Sidebar (herdr-radar, vendored with our changes)
 
 The **whole sidebar** — `[ui.sidebar.agents]`, `rows_by_agent` and
 `[ui.sidebar.spaces]` — plus `tab_bar_right` and `[theme.custom]` are rendered by
@@ -154,32 +155,37 @@ exists outside its markers (`herdr: refused — [ui.sidebar.spaces] already
 written by hand`), and it regenerates the blocks on every apply, so edits inside
 the markers don't survive either. Settings popup: `prefix+,`.
 
-We run a **fork**, [Binb1/herdr-radar](https://github.com/Binb1/herdr-radar)
-branch `robin`, linked from a local clone the same way binb1.palette is — upstream
-hardcodes its palette and row shapes, and everything below the "Our changes"
-line needed code, not settings.
+The plugin is **vendored in this repo** at `herdr/herdr-radar/` — upstream
+`hhdebb/herdr-radar@29160ad` as a `git subtree`, plus one commit with our
+changes — and linked from the checkout, the same way binb1.palette is. Upstream
+hardcodes its palette and row shapes; everything under "Our changes" needed
+code, not settings, and a new Mac should need nothing but this repo.
 
 ```bash
-# Herdr 0.9.0+, Node 18+
-git clone -b robin https://github.com/Binb1/herdr-radar.git ~/Documents\ -\ Mac/Projects-Code/herdr-radar
-herdr plugin link ~/Documents\ -\ Mac/Projects-Code/herdr-radar     # runs setup: font + ghostty map
-mkdir -p ~/.config/herdr/plugins/config/hhdebb.herdr-radar
-cp herdr/radar-config.toml ~/.config/herdr/plugins/config/hhdebb.herdr-radar/config.toml
-herdr plugin action invoke configure   --plugin hhdebb.herdr-radar   # write blocks + reload
-herdr plugin action invoke state-start --plugin hhdebb.herdr-radar   # start the daemon
+herdr/install-radar.sh   # Herdr 0.9.0+ server running, Node 18+
 ```
 
-The plugin id stays `hhdebb.herdr-radar` (it comes from the manifest), so
-settings, state and actions are addressed as upstream's. Install alone doesn't
-configure anything if the server was already running — the startup commands only
-fire on server start — hence the two `action invoke` lines. **The daemon reads its
-settings once at start**: after editing `radar-config.toml`, `state-stop` +
-`state-start` + `configure`.
+Idempotent — it links `herdr/herdr-radar`, installs `radar-config.toml`, installs
+the two fonts (generating the 85%-marks one with fonttools in
+`~/.cache/awesome-tips/fontenv`), writes radar's managed blocks and (re)starts
+the daemon. **Re-run it after any change to the plugin code or
+`radar-config.toml`** — the daemon reads settings once at start, and the row
+shapes/colours live in the generated blocks. By hand, the pieces are:
 
-After a code change in the fork: `configure` to regenerate the blocks (row
-shapes / colours live there) and `state-stop`/`state-start` for the daemon
-(token logic). Upstream merges: `git fetch origin && git rebase origin/main` on
-`robin`; conflicts will be in the five files below.
+```bash
+herdr plugin link "$PWD/herdr/herdr-radar"
+herdr plugin action invoke configure   --plugin hhdebb.herdr-radar   # blocks + reload
+herdr plugin action invoke state-stop  --plugin hhdebb.herdr-radar
+herdr plugin action invoke state-start --plugin hhdebb.herdr-radar   # daemon
+```
+
+The plugin id stays `hhdebb.herdr-radar` (it comes from the manifest). Pulling
+upstream:
+
+```bash
+git subtree pull --prefix herdr/herdr-radar https://github.com/hhdebb/herdr-radar.git main --squash
+# conflicts land in the five files under "Our changes"; then herdr/install-radar.sh
+```
 
 ### Settings (`herdr/radar-config.toml`)
 
@@ -200,7 +206,7 @@ shapes / colours live there) and `state-stop`/`state-start` for the daemon
   anywhere else: radar owns `[theme.custom]`, and Herdr's `[theme.custom.light]`
   / `.dark` tables stop applying once `auto_switch` is false.
 
-### Our changes (fork vs upstream `29160ad`)
+### Our changes (vs upstream `29160ad`)
 
 | Where | What |
 |---|---|
