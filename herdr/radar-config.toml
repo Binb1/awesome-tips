@@ -1,0 +1,30 @@
+# herdr-radar plugin settings (also editable via prefix+, in Herdr).
+# The daemon reads this ONCE at start — after editing, restart it:
+#   herdr plugin action invoke state-stop  --plugin hhdebb.herdr-radar
+#   herdr plugin action invoke state-start --plugin hhdebb.herdr-radar
+#   herdr plugin action invoke configure   --plugin hhdebb.herdr-radar
+
+# Radar polls macOS appearance once a minute, drives [theme] name itself (it
+# sets auto_switch = false — Herdr's own switch only checks on attach), and
+# rebuilds its sidebar + theme blocks for that side of the palette. Off, it
+# guesses "light" and paints dark mode with light-mode colours.
+follow_appearance = true
+
+# No blank row between workspace groups in the agents panel.
+group_gap = false
+
+[colors]
+# Radar's own defaults, pinned so they don't drift: pastel blue in light,
+# slate in dark. Empty string = let the theme's own tint show instead.
+active_row_bg_light = "#b9cdf2"
+active_row_bg_dark = "#363b52"   # radar default #414868 pops too hard on a #151517 panel
+
+[chrome]
+# Fork-only (robin branch): written verbatim into radar's managed [theme.custom]
+# block on both appearances. panel_bg reset = transparent panels so Ghostty's
+# own background shows through; overlays = readable dim text on both panels;
+# teal = azure instead of Catppuccin's teal chips on pane borders.
+panel_bg = "reset"
+overlay0 = "#6e7286"
+overlay1 = "#7a7e94"
+teal = "#2E9BE0"

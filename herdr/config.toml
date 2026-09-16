@@ -13,16 +13,11 @@ auto_switch = true
 dark_name = "catppuccin"
 light_name = "catppuccin-latte"
 
-[theme.custom]
-panel_bg = "reset"
-# Dim sidebar text (agent kind labels etc.): Latte's overlays are unreadable
-# on the darkened latte-custom background; these sit at Mocha's overlay
-# darkness, which reads fine in BOTH modes (theme.custom applies to both).
-overlay0 = "#6e7286"
-overlay1 = "#7a7e94"
-# Kill the Catppuccin teal chips (worktree/branch labels on pane borders):
-# align with the palette's azure instead.
-teal = "#2E9BE0"
+# Chrome overrides (panel_bg = "reset", overlay0/1, teal) are NOT here: radar
+# owns [theme.custom] and drives [theme] name / auto_switch itself, and Herdr's
+# [theme.custom.light]/.dark tables stop applying once auto_switch is false.
+# They live in the [chrome] table of radar's plugin settings (our fork writes
+# them into the managed theme block) — see herdr/radar-config.toml.
 
 [keys]
 # Workspaces are the per-project unit; give them the plain digits
@@ -32,6 +27,26 @@ switch_tab = "alt+1..9"
 
 [ui]
 show_agent_labels_on_pane_borders = true
+# Uniform filled color dots per agent state (working=orange, done=green,
+# blocked=red) - same-size circles, no half-moon glyphs ("symbols" mode
+# renders working as a wide ◐, which looked off).
+status_indicators = "dots"
+# Optional: flat attention queue instead of grouping agents under their
+# workspace headers (blocked bubbles to the top). Off because the workspace
+# grouping is what tells entries apart across projects.
+# agent_panel_sort = "priority"
+
+# The whole sidebar — [ui.sidebar.agents], rows_by_agent AND [ui.sidebar.spaces]
+# — plus tab_bar_right are rendered by the herdr-radar plugin (hhdebb/herdr-radar)
+# through its marker-fenced managed blocks below. Don't hand-write any of those
+# tables: radar refuses to install while one exists outside its markers, and it
+# regenerates the blocks on every apply. Radar supplies what the old hand-rolled
+# rows did and more: vendor logos, a native working spinner, sticky done/blocked
+# marks that survive until you look at them, workspace grouping with worktrees
+# nested, and activity ordering. The one thing it dropped on purpose is the
+# workspace branch line (a Space is picked by what runs in it, not its branch).
+# Settings popup: prefix+, — set agents_panel = "herdr" there to fall back to
+# Herdr's own rendering.
 
 # Command palette (binb1.palette) — prefix+f (prefix+p is previous_tab)
 [[keys.command]]
@@ -44,6 +59,21 @@ description = "Command palette"
 # cmd, e.g. Ghostty). The action toggles: open if closed, close if open.
 [[keys.command]]
 key = "cmd+p"
+type = "plugin_action"
+command = "binb1.palette.open"
+description = "Command palette"
+
+# Palette from Moshi (iOS): cmd+f
+[[keys.command]]
+key = "cmd+f"
+type = "plugin_action"
+command = "binb1.palette.open"
+description = "Command palette"
+
+# Palette from Moshi's key bar (no cmd there): ctrl+f. Note this
+# swallows readline forward-char everywhere; remove if missed.
+[[keys.command]]
+key = "ctrl+f"
 type = "plugin_action"
 command = "binb1.palette.open"
 description = "Command palette"
