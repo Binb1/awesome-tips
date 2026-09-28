@@ -26,6 +26,11 @@ Full setup guide in [herdr/](herdr/) — configs: [herdr/config.toml](herdr/conf
 **On the go setup**<br />
 Claude Code on VPS + Telegram bot flow to message me when PRs are opened. [demo](https://thebuildupdev.substack.com/p/claude-code-from-anywhere-with-your)<br />
 
+# Mac setup
+
+All the apps and CLI tools I install on a fresh Mac live in [mac-setup/Brewfile](mac-setup/Brewfile): Homebrew casks, App Store apps (via `mas`), and a few manual installs noted at the bottom.<br />
+`brew bundle --file=mac-setup/Brewfile` (sign in to the App Store first)<br />
+
 # Terminal &amp; editor setup
 
 My terminal stack follows the macOS system appearance — everything flips between light and dark together.

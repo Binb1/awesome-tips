@@ -1,0 +1,46 @@
+# New Mac setup — run with: brew bundle --file=mac-setup/Brewfile
+# App Store apps need you signed in to the App Store first.
+
+# ── CLI ──────────────────────────────────────────────
+brew "herdr"         # terminal multiplexer for AI agents
+brew "mas"           # installs the App Store apps below
+brew "gh"
+brew "starship"
+brew "nvm"           # node — then: nvm install --lts
+brew "pnpm"
+brew "pyenv"         # python — then: pyenv install 3.12
+brew "uv"
+
+# ── Dev ──────────────────────────────────────────────
+cask "ghostty"
+cask "claude-code@latest"
+cask "docker-desktop"
+cask "stats"
+cask "swiftbar"      # Herdr menu-bar widget
+cask "fork"          # git client
+cask "linear"
+cask "figma"
+cask "raycast"
+
+# ── Apps ─────────────────────────────────────────────
+cask "claude"
+cask "notion"
+cask "notion-calendar"
+cask "spotify"
+cask "granola"
+cask "bitwarden"
+cask "nordvpn"
+cask "slack"
+cask "telegram"
+
+# ── App Store ────────────────────────────────────────
+mas "Pixelmator Pro", id: 1289583905
+mas "Bear", id: 1091189122
+mas "Flighty", id: 1358823008
+mas "WhatsApp", id: 310633997
+mas "Chess.com", id: 329218549   # iPad app, runs on Apple Silicon
+
+# ── Manual installs ──────────────────────────────────
+# Lettera  — App Store (search "Lettera", by the Bear team; not listed via mas)
+# Astro    — ASO keyword tool by Matteo Spada, direct download from its website
+# pi       — npm install -g @earendil-works/pi-coding-agent  (after nvm)
