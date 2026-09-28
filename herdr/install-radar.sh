@@ -4,7 +4,9 @@
 #
 #   herdr/install-radar.sh
 #
-# Does: link the plugin from this checkout, install our settings, install the
+# Does: install the plugin from GitHub (Binb1/awesome-tips/herdr/herdr-radar on
+# main — Herdr keeps its own copy, so switching branches here can't break it;
+# push plugin changes before re-running), install our settings, install the
 # two fonts (radar's merged JetBrains Mono, and the 85%-marks variant Ghostty
 # actually uses), write radar's managed blocks into ~/.config/herdr/config.toml,
 # (re)start its daemon. Assumes the Herdr server is running and Ghostty's config
@@ -12,7 +14,7 @@
 
 set -eu
 REPO="${0:A:h:h}"
-PLUGIN="$REPO/herdr/herdr-radar"
+SRC="Binb1/awesome-tips/herdr/herdr-radar"
 ID="hhdebb.herdr-radar"
 CFG_DIR="$HOME/.config/herdr/plugins/config/$ID"
 FONTS="$HOME/Library/Fonts"
@@ -27,16 +29,13 @@ ver=$(herdr --version | awk '{print $2}')
 [[ "$(herdr status server 2>/dev/null | awk '/^version:/{print $2}')" == "$ver" ]] || { echo "server is not $ver — restart it first (kills panes)"; exit 1 }
 [[ "$(node -p 'process.versions.node.split(".")[0]')" -ge 18 ]] || { echo "node < 18"; exit 1 }
 
-say "Plugin: link $PLUGIN"
-if herdr plugin list 2>/dev/null | grep -q "$ID .*\[local:$PLUGIN\]"; then
-  echo "    already linked"
-else
-  herdr plugin action invoke state-stop --plugin "$ID" >/dev/null 2>&1 || true
-  herdr plugin unlink "$ID" >/dev/null 2>&1 || true
-  herdr plugin uninstall "$ID" >/dev/null 2>&1 || true
-  herdr plugin link "$PLUGIN" >/dev/null
-  echo "    linked"
-fi
+say "Plugin: install $SRC from GitHub"
+herdr plugin action invoke state-stop --plugin "$ID" >/dev/null 2>&1 || true
+herdr plugin unlink "$ID" >/dev/null 2>&1 || true   # older setups linked this checkout
+herdr plugin uninstall "$ID" >/dev/null 2>&1 || true
+herdr plugin install "$SRC" --ref main --yes >/dev/null
+PLUGIN=$(herdr plugin list --plugin "$ID" --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).result.plugins[0].plugin_root))')
+echo "    installed at $PLUGIN"
 
 say "Settings: $CFG_DIR/config.toml"
 mkdir -p "$CFG_DIR"
@@ -77,7 +76,7 @@ herdr plugin action invoke state-stop  --plugin "$ID" >/dev/null 2>&1 || true
 sleep 1
 herdr plugin action invoke state-start --plugin "$ID" >/dev/null
 sleep 3
-pgrep -f "herdr-radar/bin/agent-state.js" >/dev/null && echo "    daemon running" || { echo "    daemon NOT running — herdr plugin log --plugin $ID"; exit 1 }
+pgrep -f "$PLUGIN/bin/agent-state.js" >/dev/null && echo "    daemon running" || { echo "    daemon NOT running — herdr plugin log --plugin $ID"; exit 1 }
 herdr config check
 
 say "Done. If the vendor marks look wrong, reload Ghostty (Cmd+Shift+,) or restart it for a new font file."
