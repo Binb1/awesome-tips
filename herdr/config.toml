@@ -13,16 +13,11 @@ auto_switch = true
 dark_name = "catppuccin"
 light_name = "catppuccin-latte"
 
-[theme.custom]
-panel_bg = "reset"
-# Dim sidebar text (agent kind labels etc.): Latte's overlays are unreadable
-# on the darkened latte-custom background; these sit at Mocha's overlay
-# darkness, which reads fine in BOTH modes (theme.custom applies to both).
-overlay0 = "#6e7286"
-overlay1 = "#7a7e94"
-# Kill the Catppuccin teal chips (worktree/branch labels on pane borders):
-# align with the palette's azure instead.
-teal = "#2E9BE0"
+# Chrome overrides (panel_bg = "reset", overlay0/1, teal) are NOT here: radar
+# owns [theme.custom] and drives [theme] name / auto_switch itself, and Herdr's
+# [theme.custom.light]/.dark tables stop applying once auto_switch is false.
+# They live in the [chrome] table of radar's plugin settings (our fork writes
+# them into the managed theme block) — see herdr/radar-config.toml.
 
 [keys]
 # Workspaces are the per-project unit; give them the plain digits
@@ -41,31 +36,17 @@ status_indicators = "dots"
 # grouping is what tells entries apart across projects.
 # agent_panel_sort = "priority"
 
-# Session-bar rows for Claude panes: task title (from the terminal title
-# Claude Code sets), plus one line for git branch (orange) / active subagent.
-# $branch / $worker are display-only pane metadata tokens fed by the custom
-# Claude Code hook ~/.claude/hooks/herdr-sidebar-tokens.sh (registered in
-# ~/.claude/settings.json — NOT managed by `herdr integration`). The hook
-# suppresses main/master, so most entries stay a single title line.
-[ui.sidebar.agents]
-row_gap = 0
-
-[ui.sidebar.agents.rows_by_agent]
-claude = [
-  ["state_icon", { token = "$spin", fg = "#F8BC82" }, { token = "terminal_title", bold = true }],
-  [{ token = "$branch", fg = "#FAB387" }, { token = "$worker", dim = true }],
-]
-
-# Space (workspace) rows get the same session-bar look: state glyph + bold
-# name, then the git branch in orange with a dim status summary — the
-# workspace-level analog of the screenshot's "task name / #issue" pairs.
-# branch and git_status are Herdr built-ins here, no hook involved.
-[ui.sidebar.spaces]
-row_gap = 0
-rows = [
-  ["state_icon", { token = "workspace", bold = true }],
-  [{ token = "branch", fg = "#FAB387" }, { token = "git_status", dim = true }],
-]
+# The whole sidebar — [ui.sidebar.agents], rows_by_agent AND [ui.sidebar.spaces]
+# — plus tab_bar_right are rendered by the herdr-radar plugin (hhdebb/herdr-radar)
+# through its marker-fenced managed blocks below. Don't hand-write any of those
+# tables: radar refuses to install while one exists outside its markers, and it
+# regenerates the blocks on every apply. Radar supplies what the old hand-rolled
+# rows did and more: vendor logos, a native working spinner, sticky done/blocked
+# marks that survive until you look at them, workspace grouping with worktrees
+# nested, and activity ordering. The one thing it dropped on purpose is the
+# workspace branch line (a Space is picked by what runs in it, not its branch).
+# Settings popup: prefix+, — set agents_panel = "herdr" there to fall back to
+# Herdr's own rendering.
 
 # Command palette (binb1.palette) — prefix+f (prefix+p is previous_tab)
 [[keys.command]]
@@ -82,3 +63,17 @@ type = "plugin_action"
 command = "binb1.palette.open"
 description = "Command palette"
 
+# Palette from Moshi (iOS): cmd+f
+[[keys.command]]
+key = "cmd+f"
+type = "plugin_action"
+command = "binb1.palette.open"
+description = "Command palette"
+
+# Palette from Moshi's key bar (no cmd there): ctrl+f. Note this
+# swallows readline forward-char everywhere; remove if missed.
+[[keys.command]]
+key = "ctrl+f"
+type = "plugin_action"
+command = "binb1.palette.open"
+description = "Command palette"
