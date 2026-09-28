@@ -285,6 +285,50 @@ from a Claude session that is itself living in a herdr pane (`$HERDR_PANE_ID`) �
 it dies mid-swap. `herdr update --handoff` claims a live handoff, untested here
 and it fights the brew install.
 
+## Sidebar session-bar rows
+
+The sidebar renders Claude panes as compact "session bar" entries
+(`[ui.sidebar.agents.rows_by_agent]` in `config.toml`, Herdr 0.8.2+):
+
+1. status glyph + Claude Code sparkle-pulse spinner while working (`$spin`,
+   orange, frames ·✢✳✻✽) + the unstripped terminal title — it keeps the
+   glyph Claude Code itself maintains (✳ idle, ◐ working),
+2. one extra line only when it means something: git branch in orange
+   (`$branch` — suppressed on main/master) and/or
+   `└ ✳ Worker: <description>` while a subagent runs (`$worker`, dim).
+
+`status_indicators = "dots"` keeps the state marks as uniform filled
+color dots, same size in every state (the "symbols" set renders working as
+a wide half-moon ◐, which looked off); `row_gap = 0` keeps entries tight. Custom per-state glyphs are
+NOT natively supported (only the dots/symbols sets, checked 0.8.2) — the
+spinner works because we own the token pipeline, not the state icon.
+
+`$branch` / `$worker` are display-only pane metadata tokens fed by a custom
+Claude Code hook, `~/.claude/hooks/herdr-sidebar-tokens.sh` (repo copy:
+`herdr/herdr-sidebar-tokens.sh`), registered in
+`~/.claude/settings.json` on SessionStart/Stop (branch), PreToolUse with
+matcher `Task|Agent` (worker set, 15-min TTL) and SubagentStop (worker
+clear). It lives *beside* the managed `herdr-agent-state.sh` — reinstalling
+the herdr integration doesn't touch it. Needs `jq`.
+
+`$spin` is animated by `herdr-sidebar-animator.sh` (repo copy here; live
+copy `~/.config/herdr/herdr-sidebar-animator.sh`), a resident loop run by
+launchd (`~/Library/LaunchAgents/com.robin.herdr-sidebar-animator.plist`,
+repo copy: `herdr/com.robin.herdr-sidebar-animator.plist`, KeepAlive): every 0.4s it snapshots, pushes the next sparkle frame to every
+working Claude pane (3s TTL so a dead animator can't freeze a frame), and
+clears panes that stopped working; with nothing working it idles at 2s
+polls. Manage with `launchctl bootstrap|bootout gui/$(id -u) <plist>`; log
+at `/tmp/herdr-sidebar-animator.log`.
+
+Gotchas learned building it:
+- `herdr pane report-metadata` wants the pane id FIRST and space-separated
+  option values — the `--help` usage string is wrong (0.8.2).
+- Token values are whitespace-trimmed server-side (even NBSP), so worker
+  rows carry a `└` prefix instead of indentation.
+- SubagentStop is delivered to the parent session but carries the stopped
+  subagent's `agent_id` — don't use "agent_id present" alone to filter out
+  subagent-context events.
+
 ## Menu bar (SwiftBar)
 
 `swiftbar/herdr.stream.sh` is a SwiftBar plugin that shows agent states in
