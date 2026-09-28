@@ -24,7 +24,8 @@ cp herdr/config.toml ~/.config/herdr/config.toml
 
 # 2b. Sidebar: the vendored herdr-radar plugin (herdr/herdr-radar) with our
 #     changes. Run AFTER step 3 (Ghostty config carries its font line) and
-#     after step 4 (server must be 0.9.0+). Links, settings, fonts, blocks, daemon.
+#     after step 4 (server must be 0.9.0+). Installs the plugin from GitHub,
+#     then settings, fonts, blocks, daemon.
 herdr/install-radar.sh
 
 # 3. Ghostty config (includes the Herdr keybinds at the bottom)
@@ -71,7 +72,7 @@ config reload is not enough).
 | Ghostty config (keybinds at the bottom) | `~/Library/Application Support/com.mitchellh.ghostty/config` |
 | Claude Code integration hook (feeds agent states) | `~/.claude/hooks/herdr-agent-state.sh` |
 | herdr-radar plugin settings (repo: `herdr/radar-config.toml`) | `~/.config/herdr/plugins/config/hhdebb.herdr-radar/config.toml` |
-| herdr-radar plugin code (linked, not copied) + daemon state | `herdr/herdr-radar/` in this checkout; `~/.local/state/herdr/plugins/hhdebb.herdr-radar/` |
+| herdr-radar plugin code (Herdr's own copy, installed from GitHub) + daemon state | `~/.config/herdr/plugins/github/hhdebb.herdr-radar-*/herdr/herdr-radar/`; `~/.local/state/herdr/plugins/hhdebb.herdr-radar/` |
 | herdr-radar fonts | `~/Library/Fonts/JetBrainsMonoHerdr-Regular.ttf`, `JetBrainsMonoHerdrSmall-Regular.ttf` (generated), `HerdrAgentIconsMax-*.ttf` (radar's own, unused by Ghostty) |
 | Herdr skill for Claude Code | `~/.claude/skills/herdr` |
 | Shell helpers (`h` function + orange-cursor hook) | end of `~/.zshrc` |
@@ -157,7 +158,9 @@ the markers don't survive either. Settings popup: `prefix+,`.
 
 The plugin is **vendored in this repo** at `herdr/herdr-radar/` — upstream
 `hhdebb/herdr-radar@29160ad` as a `git subtree`, plus one commit with our
-changes — and linked from the checkout, the same way binb1.palette is. Upstream
+changes. It is **installed from GitHub** (`Binb1/awesome-tips/herdr/herdr-radar`
+on `main`), not linked from the checkout: Herdr keeps its own copy, so switching
+branches or moving this repo can't blank the sidebar. Upstream
 hardcodes its palette and row shapes; everything under "Our changes" needed
 code, not settings, and a new Mac should need nothing but this repo.
 
@@ -165,15 +168,15 @@ code, not settings, and a new Mac should need nothing but this repo.
 herdr/install-radar.sh   # Herdr 0.9.0+ server running, Node 18+
 ```
 
-Idempotent — it links `herdr/herdr-radar`, installs `radar-config.toml`, installs
+Idempotent — it installs the plugin from GitHub, installs `radar-config.toml`, installs
 the two fonts (generating the 85%-marks one with fonttools in
 `~/.cache/awesome-tips/fontenv`), writes radar's managed blocks and (re)starts
-the daemon. **Re-run it after any change to the plugin code or
-`radar-config.toml`** — the daemon reads settings once at start, and the row
+the daemon. **Re-run it after any change to the plugin code (push it to `main`
+first — the install pulls from GitHub) or `radar-config.toml`** — the daemon reads settings once at start, and the row
 shapes/colours live in the generated blocks. By hand, the pieces are:
 
 ```bash
-herdr plugin link "$PWD/herdr/herdr-radar"
+herdr plugin install Binb1/awesome-tips/herdr/herdr-radar --ref main --yes
 herdr plugin action invoke configure   --plugin hhdebb.herdr-radar   # blocks + reload
 herdr plugin action invoke state-stop  --plugin hhdebb.herdr-radar
 herdr plugin action invoke state-start --plugin hhdebb.herdr-radar   # daemon
@@ -239,7 +242,7 @@ Herdr request), two colours in one cell.
 
 Uninstall is ordered: `herdr plugin action invoke unconfigure` (stops the daemon,
 clears every token it wrote, removes the managed blocks) → `uninstall-font` →
-`herdr plugin unlink`.
+`herdr plugin uninstall hhdebb.herdr-radar`.
 
 The ghostty-theme-sync plugin is still installed but only its startup
 `refresh.sh` runs (pane tokens). Its `sync` action rewrites `[theme.custom]` and
