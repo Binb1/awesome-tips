@@ -1,20 +1,21 @@
 # Claude Code status line
 
-A compact one-line status line showing model, branch, context window and Claude.ai usage limits:
+A compact one-line status line showing model, worktree, branch, context window and the Claude.ai weekly limit:
 
 ```
-Opus 5.5·high  main  ctx ██░░░ 42%  5h ██░░░ 31%  wk ███░░ 67%
+Opus 5.5·high  main  ctx ██░░░ 42%  wk ███░░ 67%
+Opus 5.5·high  wt my-feature  fix/login  ctx ██░░░ 42%  wk ███░░ 67%
 ```
 
 | Segment | Source field |
 |---|---|
 | `Opus 5.5·high` | `model.display_name`, `effort.level` |
-| `main` | current git branch of `workspace.current_dir` |
+| `wt my-feature` | linked git worktree folder name, only shown inside one (works for herdr, `claude --worktree` or plain `git worktree`) |
+| `main` | current git branch of `workspace.current_dir`, hidden when it equals the worktree name |
 | `ctx` | `context_window.used_percentage` |
-| `5h` | `rate_limits.five_hour.used_percentage` |
 | `wk` | `rate_limits.seven_day.used_percentage` (weekly limit) |
 
-Bars turn green → yellow (50%) → red (80%). Segments with no data are hidden — e.g. `5h`/`wk` only appear on a Claude.ai subscription, and `ctx` after the first response.
+Bars turn green → yellow (50%) → red (80%). Segments with no data are hidden — e.g. `wk` only appears on a Claude.ai subscription, and `ctx` after the first response.
 
 ## Setup
 
