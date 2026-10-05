@@ -26,11 +26,11 @@ cp herdr/config.toml ~/.config/herdr/config.toml
 #     Run AFTER step 3 (Ghostty config + themes in place) and from inside a
 #     Herdr pane. Setup installs the logo font and appends the sidebar block
 #     to ~/.config/herdr/config.toml (backups: *.bak-ghostty-sidebar).
-herdr plugin install Binb1/herdr-ghostty-sidebar --ref v0.1.1 --yes
+herdr plugin install Binb1/herdr-ghostty-sidebar --ref v0.1.2 --yes
 herdr plugin action invoke setup --plugin binb1.ghostty-sidebar
 # Optional: "└ ✳ <subagent>" row while Claude Code runs subagents (adds 4
 # hooks to ~/.claude/settings.json + a wrapper in ~/.claude/hooks/; backup
-# settings.json.bak-ghostty-sidebar). Re-run after a plugin update.
+# settings.json.bak-ghostty-sidebar). One-time: updates keep it working.
 herdr plugin action invoke claude-install --plugin binb1.ghostty-sidebar
 # then quit and reopen Ghostty so it loads the logo font
 
