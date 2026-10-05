@@ -26,8 +26,12 @@ cp herdr/config.toml ~/.config/herdr/config.toml
 #     Run AFTER step 3 (Ghostty config + themes in place) and from inside a
 #     Herdr pane. Setup installs the logo font and appends the sidebar block
 #     to ~/.config/herdr/config.toml (backups: *.bak-ghostty-sidebar).
-herdr plugin install Binb1/herdr-ghostty-sidebar --ref v0.1.0 --yes
+herdr plugin install Binb1/herdr-ghostty-sidebar --ref v0.1.1 --yes
 herdr plugin action invoke setup --plugin binb1.ghostty-sidebar
+# Optional: "└ ✳ <subagent>" row while Claude Code runs subagents (adds 4
+# hooks to ~/.claude/settings.json + a wrapper in ~/.claude/hooks/; backup
+# settings.json.bak-ghostty-sidebar). Re-run after a plugin update.
+herdr plugin action invoke claude-install --plugin binb1.ghostty-sidebar
 # then quit and reopen Ghostty so it loads the logo font
 
 # 2c. Command palette (binb1.palette — config.toml binds it)
@@ -157,13 +161,18 @@ Ghostty theme.
 agents                              spaces
 1. Fodmap                           ⠹ · 1. Fodmap
    ✳ · ✓ ROBIN-83 recomm…              ✳ · ✓ ROBIN-83 recomm…
-   └ · ✳ · ⠹ MY FODMAP t…           ○ · 2. Fodmap Backend   (blue: parked)
+     ⎇ robin-83-recommend           ○ · 2. Fodmap Backend   (blue: parked)
+   └ · ✳ · ⠹ MY FODMAP t…
+     └ ✳ Explore the API +1
 ```
 
 - **Agents**: workspace header (bold, muted), then one row per agent: vendor
   logo in its brand colour · state mark + title in the state colour (`⠹`
   spinner while working, `✓` done, `?` blocked, plain when idle). A second
-  agent in the same tab gets a `└`; agents idle for 2 h dim.
+  agent in the same tab gets a `└`; agents idle for 2 h dim. A `✓`/`?` stays
+  until you focus that pane. Under it: the git branch (`⎇`, theme blue, hidden
+  on main/master) and, with `claude-install`, a `└ ✳ <subagent>` row while
+  Claude Code runs subagents.
 - **Spaces**: aggregate mark + workspace name (`○` blue when parked, grey when
   empty), then up to three tab rows (`logo · [mark] tab name`).
 - **Colours** come from the Ghostty theme for the current appearance
@@ -176,7 +185,7 @@ agents                              spaces
   works, a small `animate` process pushes spinner frames (~1% CPU) and exits
   ~3 s after nothing is working. No network.
 
-Actions: `refresh`, `setup`, `uninstall`
+Actions: `refresh`, `setup`, `uninstall`, `claude-install`, `claude-uninstall`
 (`herdr plugin action invoke <id> --plugin binb1.ghostty-sidebar`). Local
 development: `go build -o bin/herdr-ghostty-sidebar . && herdr plugin link .`
 in the plugin checkout.
