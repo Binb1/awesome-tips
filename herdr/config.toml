@@ -13,11 +13,24 @@ auto_switch = true
 dark_name = "catppuccin"
 light_name = "catppuccin-latte"
 
-# Chrome overrides (panel_bg = "reset", overlay0/1, teal) are NOT here: radar
-# owns [theme.custom] and drives [theme] name / auto_switch itself, and Herdr's
-# [theme.custom.light]/.dark tables stop applying once auto_switch is false.
-# They live in the [chrome] table of radar's plugin settings (our fork writes
-# them into the managed theme block) — see herdr/radar-config.toml.
+# Chrome overrides, same values in both appearances: panel_bg = "reset" keeps
+# panels transparent so Ghostty's own background shows through (without it the
+# tab bar paints white), overlay0/1 = readable dim text on both panels, teal =
+# azure instead of Catppuccin's teal chips on pane borders, active_row_bg =
+# selected sidebar row (pastel blue light, slate dark).
+[theme.custom.light]
+panel_bg = "reset"
+overlay0 = "#6e7286"
+overlay1 = "#7a7e94"
+teal = "#2E9BE0"
+active_row_bg = "#b9cdf2"
+
+[theme.custom.dark]
+panel_bg = "reset"
+overlay0 = "#6e7286"
+overlay1 = "#7a7e94"
+teal = "#2E9BE0"
+active_row_bg = "#363b52"
 
 [keys]
 # Workspaces are the per-project unit; give them the plain digits
@@ -31,22 +44,16 @@ show_agent_labels_on_pane_borders = true
 # blocked=red) - same-size circles, no half-moon glyphs ("symbols" mode
 # renders working as a wide ◐, which looked off).
 status_indicators = "dots"
-# Optional: flat attention queue instead of grouping agents under their
-# workspace headers (blocked bubbles to the top). Off because the workspace
-# grouping is what tells entries apart across projects.
-# agent_panel_sort = "priority"
+# Grouped by workspace, which the herdr-ghostty-sidebar plugin's workspace ->
+# tab -> agent tree needs.
+agent_panel_sort = "spaces"
 
-# The whole sidebar — [ui.sidebar.agents], rows_by_agent AND [ui.sidebar.spaces]
-# — plus tab_bar_right are rendered by the herdr-radar plugin (hhdebb/herdr-radar)
-# through its marker-fenced managed blocks below. Don't hand-write any of those
-# tables: radar refuses to install while one exists outside its markers, and it
-# regenerates the blocks on every apply. Radar supplies what the old hand-rolled
-# rows did and more: vendor logos, a native working spinner, sticky done/blocked
-# marks that survive until you look at them, workspace grouping with worktrees
-# nested, and activity ordering. The one thing it dropped on purpose is the
-# workspace branch line (a Space is picked by what runs in it, not its branch).
-# Settings popup: prefix+, — set agents_panel = "herdr" there to fall back to
-# Herdr's own rendering.
+# [ui.sidebar.agents] and [ui.sidebar.spaces] are NOT here: the
+# herdr-ghostty-sidebar plugin appends them as a marker-fenced block
+# (`# >>> herdr-ghostty-sidebar` … `# <<<`) when you run its setup action, and
+# rewrites that block with your Ghostty theme's colours whenever the macOS
+# appearance flips. Copying this file over the live one drops the block —
+# re-run setup afterwards. See herdr/README.md "Sidebar".
 
 # Command palette (binb1.palette) — prefix+f (prefix+p is previous_tab)
 [[keys.command]]

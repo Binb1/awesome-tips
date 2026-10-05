@@ -9,6 +9,7 @@ brew "starship"
 brew "nvm"           # node — then: nvm install --lts
 brew "pnpm"
 brew "pyenv"         # python — then: pyenv install 3.12
+brew "go"            # builds the herdr plugins (palette, ghostty-sidebar) from source
 brew "uv"
 
 # ── Dev ──────────────────────────────────────────────
