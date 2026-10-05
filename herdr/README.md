@@ -15,18 +15,23 @@ actions, run Herdr commands. `config.toml` binds it to `prefix+f` and `Cmd+P`.
 ## Bootstrap a new machine
 
 ```bash
-# 1. Install Herdr (0.9.0+ — herdr-radar needs it)
+# 1. Install Herdr (0.9.0+ — the sidebar plugin needs it)
 brew install herdr
 
 # 2. Herdr config
 mkdir -p ~/.config/herdr
 cp herdr/config.toml ~/.config/herdr/config.toml
 
-# 2b. Sidebar: the vendored herdr-radar plugin (herdr/herdr-radar) with our
-#     changes. Run AFTER step 3 (Ghostty config carries its font line) and
-#     after step 4 (server must be 0.9.0+). Installs the plugin from GitHub,
-#     then settings, fonts, blocks, daemon.
-herdr/install-radar.sh
+# 2b. Sidebar: herdr-ghostty-sidebar (our plugin, see "Sidebar" below).
+#     Run AFTER step 3 (Ghostty config + themes in place) and from inside a
+#     Herdr pane. Setup installs the logo font and appends the sidebar block
+#     to ~/.config/herdr/config.toml (backups: *.bak-ghostty-sidebar).
+herdr plugin install Binb1/herdr-ghostty-sidebar --ref v0.1.0 --yes
+herdr plugin action invoke setup --plugin binb1.ghostty-sidebar
+# then quit and reopen Ghostty so it loads the logo font
+
+# 2c. Command palette (binb1.palette — config.toml binds it)
+herdr plugin install Binb1/herdr-palette --ref main --yes
 
 # 3. Ghostty config (includes the Herdr keybinds at the bottom)
 #    + custom light/dark themes (latte-custom / mocha-custom)
@@ -71,9 +76,9 @@ config reload is not enough).
 | Herdr logs, session state, socket | `~/.config/herdr/` |
 | Ghostty config (keybinds at the bottom) | `~/Library/Application Support/com.mitchellh.ghostty/config` |
 | Claude Code integration hook (feeds agent states) | `~/.claude/hooks/herdr-agent-state.sh` |
-| herdr-radar plugin settings (repo: `herdr/radar-config.toml`) | `~/.config/herdr/plugins/config/hhdebb.herdr-radar/config.toml` |
-| herdr-radar plugin code (Herdr's own copy, installed from GitHub) + daemon state | `~/.config/herdr/plugins/github/hhdebb.herdr-radar-*/herdr/herdr-radar/`; `~/.local/state/herdr/plugins/hhdebb.herdr-radar/` |
-| herdr-radar fonts | `~/Library/Fonts/JetBrainsMonoHerdr-Regular.ttf`, `JetBrainsMonoHerdrSmall-Regular.ttf` (generated), `HerdrAgentIconsMax-*.ttf` (radar's own, unused by Ghostty) |
+| herdr-ghostty-sidebar plugin (Herdr's own copy, installed from GitHub) + spinner/cache state | `herdr plugin list --plugin binb1.ghostty-sidebar` prints the path; state in `~/.local/state/herdr/plugins/binb1.ghostty-sidebar/` |
+| herdr-ghostty-sidebar layout block | bottom of `~/.config/herdr/config.toml` (managed, rewritten per appearance) |
+| herdr-ghostty-sidebar logo font | `~/Library/Fonts/HerdrSidebarLogos-Regular.ttf` (mapped in the Ghostty config) |
 | Herdr skill for Claude Code | `~/.claude/skills/herdr` |
 | Shell helpers (`h` function + orange-cursor hook) | end of `~/.zshrc` |
 | Ghostty custom themes (latte-custom / mocha-custom) | `~/.config/ghostty/themes/` |
@@ -135,136 +140,54 @@ pane area transparent so Ghostty's real background shows through (the
 mocha-custom very-dark `#151517` in dark mode, the latte-custom grey
 `#DCDCE1` in light) instead of Herdr repainting it with stock Catppuccin.
 
-The four chrome overrides (`panel_bg = "reset"`, `overlay0/1`, `teal`) live in
-`[theme.custom.dark]` **and** `[theme.custom.light]` (same values in both —
-0.9.0 added the per-appearance tables), not in a plain `[theme.custom]`: herdr-radar
-owns that exact header and refuses to install while one exists by hand. Note
-radar also rewrites `[theme]` itself (`name = …`, `auto_switch = false`) — see
-the radar section. Since the
-tables are per-mode now, the old 0.8.2 limitation is gone — a mocha-custom
-saturation boost for the sidebar chrome could go in `.dark` alone without
-touching light mode.
+The chrome overrides (`panel_bg = "reset"`, `overlay0/1`, `teal`,
+`active_row_bg`) live in `[theme.custom.light]` **and** `[theme.custom.dark]`
+of `config.toml` — same values in both except `active_row_bg` (pastel blue
+`#b9cdf2` light, slate `#363b52` dark). `overlay0/1` keep dim text readable on
+both panels, `teal` turns Catppuccin's teal pane-border chips azure, and
+without `panel_bg = "reset"` the tab bar paints white.
 
-## Sidebar (herdr-radar, vendored with our changes)
+## Sidebar (herdr-ghostty-sidebar plugin)
 
-The **whole sidebar** — `[ui.sidebar.agents]`, `rows_by_agent` and
-`[ui.sidebar.spaces]` — plus `tab_bar_right` and `[theme.custom]` are rendered by
-[herdr-radar](https://github.com/hhdebb/herdr-radar) through marker-fenced
-managed blocks (`# >>> herdr-radar … block` / `# <<<`) in `config.toml`.
-**Don't hand-write any of those tables**: radar refuses to install while one
-exists outside its markers (`herdr: refused — [ui.sidebar.spaces] already
-written by hand`), and it regenerates the blocks on every apply, so edits inside
-the markers don't survive either. Settings popup: `prefix+,`.
-
-The plugin is **vendored in this repo** at `herdr/herdr-radar/` — upstream
-`hhdebb/herdr-radar@29160ad` as a `git subtree`, plus one commit with our
-changes. It is **installed from GitHub** (`Binb1/awesome-tips/herdr/herdr-radar`
-on `main`), not linked from the checkout: Herdr keeps its own copy, so switching
-branches or moving this repo can't blank the sidebar. Upstream
-hardcodes its palette and row shapes; everything under "Our changes" needed
-code, not settings, and a new Mac should need nothing but this repo.
-
-```bash
-herdr/install-radar.sh   # Herdr 0.9.0+ server running, Node 18+
-```
-
-Idempotent — it installs the plugin from GitHub, installs `radar-config.toml`, installs
-the two fonts (generating the 85%-marks one with fonttools in
-`~/.cache/awesome-tips/fontenv`), writes radar's managed blocks and (re)starts
-the daemon. **Re-run it after any change to the plugin code (push it to `main`
-first — the install pulls from GitHub) or `radar-config.toml`** — the daemon reads settings once at start, and the row
-shapes/colours live in the generated blocks. By hand, the pieces are:
-
-```bash
-herdr plugin install Binb1/awesome-tips/herdr/herdr-radar --ref main --yes
-herdr plugin action invoke configure   --plugin hhdebb.herdr-radar   # blocks + reload
-herdr plugin action invoke state-stop  --plugin hhdebb.herdr-radar
-herdr plugin action invoke state-start --plugin hhdebb.herdr-radar   # daemon
-```
-
-The plugin id stays `hhdebb.herdr-radar` (it comes from the manifest). Pulling
-upstream:
-
-```bash
-git subtree pull --prefix herdr/herdr-radar https://github.com/hhdebb/herdr-radar.git main --squash
-# conflicts land in the five files under "Our changes"; then herdr/install-radar.sh
-```
-
-### Settings (`herdr/radar-config.toml`)
-
-- `follow_appearance = true` — radar polls macOS appearance once a minute,
-  drives `[theme] name` itself and sets `auto_switch = false` (Herdr's own switch
-  only checks on attach). **Leave it on**: off, radar reads the mode from
-  `[theme] name`, finds none, and builds the sidebar for *light* — near-black
-  logo ink and light greys on a dark panel. That was the first thing that looked
-  wrong after install.
-- `group_gap = false` — no blank row between workspace groups.
-- `[colors]` `active_row_bg_light = "#b9cdf2"` (radar's default, pinned) and
-  `active_row_bg_dark = "#363b52"` (radar's `#414868` pops too hard on our
-  `#151517` panel).
-- `[chrome]` — **fork-only.** Extra `[theme.custom]` tokens written verbatim into
-  radar's managed theme block: `panel_bg = "reset"` (transparent panels — without
-  it the tab bar paints white), `overlay0/1` (readable dim text on both panels),
-  `teal` (azure instead of Catppuccin teal on pane-border chips). They can't live
-  anywhere else: radar owns `[theme.custom]`, and Herdr's `[theme.custom.light]`
-  / `.dark` tables stop applying once `auto_switch` is false.
-
-### Our changes (vs upstream `29160ad`)
-
-| Where | What |
-|---|---|
-| `lib/config.js`, `lib/managed-config.js` | the `[chrome]` passthrough above |
-| `lib/palette.js` | light-mode stale grey `#a4a5a9` → `#8e9097` (unreadable on the grey panel); light `idle_fresh` green `#416c4f` → `#4c9a5a`, same as `done` — one green, not two |
-| `lib/managed-config.js` | working titles not bold; space name row = aggregate mark + name in the group-header style (bold `#7c7f93`), blue ring `#2E9BE0` for parked; then up to three **tab rows** (`logo · [mark] tab-name`) instead of upstream's vendor-logo row |
-| `lib/state.js` | `space_names` split from the logo token; `spaceMark` = spinner / ✓ / ? / ring; `spaceTabTokens` — per-tab rows with the tab's own state, unnamed tabs take the lead agent's session title, empty unnamed tabs are dropped; `hot` paint |
-| `lib/frame.js` | two-pass so a workspace with a working pane paints its parked siblings in the working colour ("hot"); any idle tier counts as idle for the space mark (upstream matched `idle` exactly and left fresh/stale-only workspaces unmarked); all-stale workspace takes the grey ring |
-
-Row shapes, with Herdr's unsuppressible ` · ` between cells:
+The sidebar is our own plugin, [Binb1/herdr-ghostty-sidebar](https://github.com/Binb1/herdr-ghostty-sidebar)
+(plugin id `binb1.ghostty-sidebar`, Go): radar's design, coloured from the
+Ghostty theme.
 
 ```
 agents                              spaces
-1. Fodmap                           ✓ · 1. Fodmap
+1. Fodmap                           ⠹ · 1. Fodmap
    ✳ · ✓ ROBIN-83 recomm…              ✳ · ✓ ROBIN-83 recomm…
-   └ · ✳ · MY FODMAP t…             ○ · 2. Fodmap Backend   (blue: parked < 2 h)
-7. moqa-aso-bot  (stale: dim)          ✳ · Landing page
-   ✳ · Claude Code                  ○ · 4. Dump-it          (grey: empty / all stale)
+   └ · ✳ · ⠹ MY FODMAP t…           ○ · 2. Fodmap Backend   (blue: parked)
 ```
 
-Marks: braille spinner in the vendor colour while working, `✓` green done, `?` red
-blocked. Logo is brand orange in every state except stale. Idle → stale is
-`activity_stale_minutes` (default 120).
+- **Agents**: workspace header (bold, muted), then one row per agent: vendor
+  logo in its brand colour · state mark + title in the state colour (`⠹`
+  spinner while working, `✓` done, `?` blocked, plain when idle). A second
+  agent in the same tab gets a `└`; agents idle for 2 h dim.
+- **Spaces**: aggregate mark + workspace name (`○` blue when parked, grey when
+  empty), then up to three tab rows (`logo · [mark] tab name`).
+- **Colours** come from the Ghostty theme for the current appearance
+  (`latte-custom` / `mocha-custom`): palette 2/1/4 for done/blocked/parked,
+  foreground for idle, a foreground/background mix for headers and dimmed rows.
+  Working uses the vendor brand colour (Claude orange, Codex purple).
+- **Runtime**: Herdr runs the binary on pane/tab/workspace events; it reports
+  display tokens over Herdr's socket and rewrites its config block (then
+  `reload-config`) only when the appearance or theme changed. While an agent
+  works, a small `animate` process pushes spinner frames (~1% CPU) and exits
+  ~3 s after nothing is working. No network.
 
-Things that are **not** possible and were asked for more than once: smaller
-text or glyphs (one cell each, Ghostty `font-size` is the only knob — the marks
-themselves are handled by the font, see the Ghostty font block), removing or
-narrowing the ` · ` cell separator (no Herdr setting; would be an upstream
-Herdr request), two colours in one cell.
+Actions: `refresh`, `setup`, `uninstall`
+(`herdr plugin action invoke <id> --plugin binb1.ghostty-sidebar`). Local
+development: `go build -o bin/herdr-ghostty-sidebar . && herdr plugin link .`
+in the plugin checkout.
 
-Uninstall is ordered: `herdr plugin action invoke unconfigure` (stops the daemon,
-clears every token it wrote, removes the managed blocks) → `uninstall-font` →
-`herdr plugin uninstall hhdebb.herdr-radar`.
+Replaced herdr-radar on 2026-10-05 (and before it, a hand-rolled `rows_by_agent`
+with a launchd sparkle animator and a branch/subagent tokens hook) — both are
+in git history. testy-cool/herdr-sidebar-config was evaluated in between; its
+logo font and approach are credited in the plugin's notices.
 
-The ghostty-theme-sync plugin is still installed but only its startup
-`refresh.sh` runs (pane tokens). Its `sync` action rewrites `[theme.custom]` and
-"every sidebar token fg" — don't invoke it any more, it would repaint radar's
-managed block.
-
-### What was removed, and why it can't come back as-is
-
-Before radar (2026-09-14 → 2026-09-16) the sidebar was hand-rolled: a
-`rows_by_agent` template with a `$spin` sparkle animator (launchd loop pushing
-frames at 2.5 fps) and a Claude Code hook feeding `$branch` (feature branch,
-orange) and `$worker` (`└ ✳ Worker: <subagent description>`) pane-metadata
-tokens. All of it is gone: the animator because radar has a native spinner, the
-tokens hook because radar's agent row is fully generated — no config hook for
-extra cells, the title row already carries 14 of Herdr's 16-token row ceiling,
-and the block is rewritten on every apply. There is no way to render a custom
-token in radar's rows, so the hook was writing tokens nothing displayed.
-
-If per-pane branch or subagent info is ever wanted back, it means either
-`agents_panel = "herdr"` (lose radar entirely) or a patch upstream.
-
-Gotchas from the token pipeline, still true for anything else that calls it:
+Gotchas from earlier token experiments, still true for anything that calls
+`herdr pane report-metadata`:
 - `herdr pane report-metadata` wants the pane id FIRST and space-separated
   option values — the `--help` usage string is wrong (0.8.2).
 - Token values are whitespace-trimmed server-side (even NBSP), so worker
@@ -287,50 +210,6 @@ So: **capture what's running before you upgrade**, and don't drive the restart
 from a Claude session that is itself living in a herdr pane (`$HERDR_PANE_ID`) —
 it dies mid-swap. `herdr update --handoff` claims a live handoff, untested here
 and it fights the brew install.
-
-## Sidebar session-bar rows
-
-The sidebar renders Claude panes as compact "session bar" entries
-(`[ui.sidebar.agents.rows_by_agent]` in `config.toml`, Herdr 0.8.2+):
-
-1. status glyph + Claude Code sparkle-pulse spinner while working (`$spin`,
-   orange, frames ·✢✳✻✽) + the unstripped terminal title — it keeps the
-   glyph Claude Code itself maintains (✳ idle, ◐ working),
-2. one extra line only when it means something: git branch in orange
-   (`$branch` — suppressed on main/master) and/or
-   `└ ✳ Worker: <description>` while a subagent runs (`$worker`, dim).
-
-`status_indicators = "dots"` keeps the state marks as uniform filled
-color dots, same size in every state (the "symbols" set renders working as
-a wide half-moon ◐, which looked off); `row_gap = 0` keeps entries tight. Custom per-state glyphs are
-NOT natively supported (only the dots/symbols sets, checked 0.8.2) — the
-spinner works because we own the token pipeline, not the state icon.
-
-`$branch` / `$worker` are display-only pane metadata tokens fed by a custom
-Claude Code hook, `~/.claude/hooks/herdr-sidebar-tokens.sh` (repo copy:
-`herdr/herdr-sidebar-tokens.sh`), registered in
-`~/.claude/settings.json` on SessionStart/Stop (branch), PreToolUse with
-matcher `Task|Agent` (worker set, 15-min TTL) and SubagentStop (worker
-clear). It lives *beside* the managed `herdr-agent-state.sh` — reinstalling
-the herdr integration doesn't touch it. Needs `jq`.
-
-`$spin` is animated by `herdr-sidebar-animator.sh` (repo copy here; live
-copy `~/.config/herdr/herdr-sidebar-animator.sh`), a resident loop run by
-launchd (`~/Library/LaunchAgents/com.robin.herdr-sidebar-animator.plist`,
-repo copy: `herdr/com.robin.herdr-sidebar-animator.plist`, KeepAlive): every 0.4s it snapshots, pushes the next sparkle frame to every
-working Claude pane (3s TTL so a dead animator can't freeze a frame), and
-clears panes that stopped working; with nothing working it idles at 2s
-polls. Manage with `launchctl bootstrap|bootout gui/$(id -u) <plist>`; log
-at `/tmp/herdr-sidebar-animator.log`.
-
-Gotchas learned building it:
-- `herdr pane report-metadata` wants the pane id FIRST and space-separated
-  option values — the `--help` usage string is wrong (0.8.2).
-- Token values are whitespace-trimmed server-side (even NBSP), so worker
-  rows carry a `└` prefix instead of indentation.
-- SubagentStop is delivered to the parent session but carries the stopped
-  subagent's `agent_id` — don't use "agent_id present" alone to filter out
-  subagent-context events.
 
 ## Menu bar (SwiftBar)
 

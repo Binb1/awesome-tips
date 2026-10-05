@@ -149,20 +149,6 @@ keybind = alt+shift+digit_9=goto_tab:9
 # keybind = cmd+shift+enter=text:\x02z   # zoom focused pane
 # keybind = cmd+w=text:\x02x             # close pane (loses ghostty close-tab!)
 
-# >>> herdr-radar font block
-# herdr-radar vendor marks. Radar's setup writes two font-codepoint-map lines
-# pointing the PUA range at its standalone "Herdr Agent Icons Max" font, but
-# Ghostty normalises a mapped fallback font to the cell and draws the marks
-# noticeably bigger than the text. Instead: the merged font (JetBrains Mono —
-# Ghostty's default typeface — with the marks patched in at text-fitted
-# metrics), with the marks further scaled to 85% by
-# awesome-tips/herdr/tools/shrink-radar-icons.py. Install:
-#   cp <herdr-radar>/dist/JetBrainsMonoHerdr-Regular.ttf ~/Library/Fonts/
-#   python3 herdr/tools/shrink-radar-icons.py <herdr-radar>/dist/JetBrainsMonoHerdr-Regular.ttf \
-#     ~/Library/Fonts/JetBrainsMonoHerdrSmall-Regular.ttf 0.85 "JetBrains Mono Herdr Small"
-# then Cmd+Shift+, (or restart Ghostty for a brand-new font file).
-# Restore the two codepoint-map lines to go back to radar's own mapping.
-font-family = "JetBrains Mono Herdr Small"
-# font-codepoint-map = U+E1A0-U+E1B6="Herdr Agent Icons Max"
-# font-codepoint-map = U+E1C0-U+E1C5="Herdr Agent Icons Max"
-# <<< herdr-radar font block
+# >>> herdr-ghostty-sidebar (managed - font mapping for agent logos)
+font-codepoint-map = U+E1A0-U+E1AB=Herdr Sidebar Logos
+# <<< herdr-ghostty-sidebar
