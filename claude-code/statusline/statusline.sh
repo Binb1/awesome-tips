@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Claude Code status line: project  model·effort  wt name  branch ↑1 ↓2 +1 ~3 ?1  ctx █░░░░ 42%  wk ███░░ 58%
+# Claude Code status line: project  model·effort  wt name  branch ↑1 ↓2 +1 ~3 ?1  ctx █░░░░ 42%  wk ███░░ 58%      rc on
 # Claude Code pipes the session JSON on stdin; see README.md for setup.
 
 input=$(cat)
 
-IFS=$'\x1f' read -r model effort dir ctx week < <(
+IFS=$'\x1f' read -r sid model effort dir ctx week < <(
   jq -r '[
+    (.session_id // ""),
     (.model.display_name // "?"),
     (.effort.level // ""),
     (.workspace.current_dir // .cwd // ""),
@@ -75,4 +76,16 @@ done < <("${git[@]}" status --porcelain=v2 --branch 2>/dev/null)
 line+="  ${dim}ctx${reset} $(bar "${ctx:-0}")"
 line+="  ${dim}wk${reset} $(bar "${week:-0}")"
 
-printf '%s\n' "$line"
+# Remote Control isn't in the status line JSON; while it's connected Claude Code records a
+# bridgeSessionId in this process's ~/.claude/sessions/<pid>.json
+bridge=$(jq -r --arg s "$sid" 'select(.sessionId == $s) | .bridgeSessionId // empty' \
+  ~/.claude/sessions/*.json 2>/dev/null)
+if [[ -n $sid && -n $bridge ]]; then right="${dim}rc${reset} ${green}on${reset}"
+else right="${dim}rc off${reset}"; fi
+
+# Right-align rc using the terminal width Claude Code passes in COLUMNS
+export LC_ALL=en_US.UTF-8
+visible() { local s; s=$(sed $'s/\e\\[[0-9;]*m//g' <<<"$1"); echo "${#s}"; }
+pad=$((${COLUMNS:-0} - $(visible "$line") - $(visible "$right") - 2))
+((pad < 2)) && pad=2
+printf '%s%*s%s\n' "$line" "$pad" "" "$right"

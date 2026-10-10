@@ -49,7 +49,7 @@ Oh My Zsh with the `ys` theme and the `git z zsh-autosuggestions zsh-syntax-high
 Claude code is my go to AI tool to help me code.<br />
 It's very important to setup it well to obtain good results.<br />
 I'm using subagents in Claude code — the agents, commands, and skills I use on my projects are in the [claude-code/](claude-code/) folder.<br />
-Custom status line (project, model, worktree, branch + git status, context usage and weekly limit as full-block bars): [claude-code/statusline/](claude-code/statusline/)<br />
+Custom status line (project, model, worktree, branch + git status, context usage and weekly limit as full-block bars, Remote Control on/off): [claude-code/statusline/](claude-code/statusline/)<br />
 
 ## Useful ressources
 

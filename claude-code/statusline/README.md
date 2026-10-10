@@ -1,10 +1,10 @@
 # Claude Code status line
 
-A compact one-line status line showing project, model, worktree, branch + git status, context window and the Claude.ai weekly limit:
+A compact one-line status line showing project, model, worktree, branch + git status, context window, the Claude.ai weekly limit and, right-aligned, Remote Control status:
 
 ```
-awesome-tips  Opus 5.5·high  main ↑1 ~2  ctx ██░░░ 42%  wk ███░░ 67%
-awesome-tips  Opus 5.5·high  wt my-feature  fix/login  ctx ░░░░░ 0%  wk ███░░ 67%
+awesome-tips  Opus 5.5·high  main ↑1 ~2  ctx ██░░░ 42%  wk ███░░ 67%                    rc on
+awesome-tips  Opus 5.5·high  wt my-feature  fix/login  ctx ░░░░░ 0%  wk ███░░ 67%       rc off
 ```
 
 | Segment | Source field |
@@ -16,6 +16,7 @@ awesome-tips  Opus 5.5·high  wt my-feature  fix/login  ctx ░░░░░ 0%  
 | `↑1 ↓2 +1 ~3 ?1` | commits ahead/behind upstream, staged, modified and untracked files (only non-zero counts shown) |
 | `ctx` | `context_window.used_percentage` |
 | `wk` | `rate_limits.seven_day.used_percentage` (weekly limit) |
+| `rc on` / `rc off` | Remote Control, right-aligned using `$COLUMNS`. Not in the status line JSON: read from the `bridgeSessionId` Claude Code writes to `~/.claude/sessions/<pid>.json` while RC is connected (undocumented, may change) |
 
 Bars turn green → yellow (50%) → red (80%). Both bars are always shown, at 0% until Claude Code reports a value (`ctx` fills after the first response; `wk` needs a Claude.ai subscription).
 
