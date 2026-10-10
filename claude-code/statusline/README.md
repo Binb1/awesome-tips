@@ -1,21 +1,23 @@
 # Claude Code status line
 
-A compact one-line status line showing model, worktree, branch, context window and the Claude.ai weekly limit:
+A compact one-line status line showing project, model, worktree, branch + git status, context window and the Claude.ai weekly limit:
 
 ```
-Opus 5.5·high  main  ctx ██░░░ 42%  wk ███░░ 67%
-Opus 5.5·high  wt my-feature  fix/login  ctx ██░░░ 42%  wk ███░░ 67%
+awesome-tips  Opus 5.5·high  main ↑1 ~2  ctx ██░░░ 42%  wk ███░░ 67%
+awesome-tips  Opus 5.5·high  wt my-feature  fix/login  ctx ░░░░░ 0%  wk ███░░ 67%
 ```
 
 | Segment | Source field |
 |---|---|
+| `awesome-tips` | project: the main repo's folder name (the same from any of its worktrees), or the current folder outside git |
 | `Opus 5.5·high` | `model.display_name`, `effort.level` |
 | `wt my-feature` | linked git worktree folder name, only shown inside one (works for herdr, `claude --worktree` or plain `git worktree`) |
 | `main` | current git branch of `workspace.current_dir`, hidden when it equals the worktree name |
+| `↑1 ↓2 +1 ~3 ?1` | commits ahead/behind upstream, staged, modified and untracked files (only non-zero counts shown) |
 | `ctx` | `context_window.used_percentage` |
 | `wk` | `rate_limits.seven_day.used_percentage` (weekly limit) |
 
-Bars turn green → yellow (50%) → red (80%). Segments with no data are hidden — e.g. `wk` only appears on a Claude.ai subscription, and `ctx` after the first response.
+Bars turn green → yellow (50%) → red (80%). Both bars are always shown, at 0% until Claude Code reports a value (`ctx` fills after the first response; `wk` needs a Claude.ai subscription).
 
 ## Setup
 
