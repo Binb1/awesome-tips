@@ -15,7 +15,7 @@ awesome-tips  Opus 5.5·high  wt my-feature  ⎇ fix/login  ctx ░░░░░ 
 | `⎇ main` | current git branch of `workspace.current_dir`, hidden when it equals the worktree name |
 | `↑1 ↓2 +1 ~3 ?1` | commits ahead/behind upstream, staged, modified and untracked files (only non-zero counts shown) |
 | `ctx` | bar from `context_window.used_percentage`, then the percentage and, dimmed, tokens in context (`current_usage` input + cache creation + cache read, as `870` / `84k` / `1.2M`) |
-| `wk` | `rate_limits.seven_day.used_percentage` (weekly limit) |
+| `wk` | `rate_limits.seven_day.used_percentage` (weekly limit). Claude Code only sends it after a session's first response, so the last value is cached in `~/.cache/claude-statusline/weekly` and shown until then (or until its `resets_at` passes) |
 | `rc` | Remote Control: green when connected, red when not, right-aligned using `$COLUMNS`. Not in the status line JSON: read from the `bridgeSessionId` Claude Code writes to `~/.claude/sessions/<pid>.json` while RC is connected (undocumented, may change) |
 
 In narrow panes the line drops its least important parts until it fits `$COLUMNS`, in this order: effort level, then worktree/branch names shortened with `…` one char at a time (down to 8), git counts, the branch (the worktree name can shrink again), then the worktree name. Project, model, both bars and `rc` always stay.
@@ -27,7 +27,7 @@ In narrow panes the line drops its least important parts until it fits `$COLUMNS
  66 cols  awesome-tips  Opus 5.5  ctx ░░░░░ 9% (87k)  wk ██░░░ 31%      rc
 ```
 
-Bars turn green → yellow (50%) → red (80%). Both bars are always shown, at 0% until Claude Code reports a value (`ctx` fills after the first response; `wk` needs a Claude.ai subscription).
+Bars turn green → yellow (50%) → red (80%). Both bars are always shown, at 0% until there's a value (`ctx` fills after the first response; `wk` starts from the cached value and needs a Claude.ai subscription).
 
 ## Setup
 
