@@ -40,6 +40,9 @@ switch_tab = "alt+1..9"
 
 [ui]
 show_agent_labels_on_pane_borders = true
+# Split panes share one divider border instead of each drawing its own frame
+# with a blank column between them.
+pane_gaps = false
 # Uniform filled color dots per agent state (working=orange, done=green,
 # blocked=red) - same-size circles, no half-moon glyphs ("symbols" mode
 # renders working as a wide ◐, which looked off).
