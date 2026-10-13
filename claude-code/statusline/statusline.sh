@@ -5,7 +5,7 @@
 input=$(cat)
 export LC_ALL=en_US.UTF-8
 
-IFS=$'\x1f' read -r sid model effort dir ctx tokens week < <(
+IFS=$'\x1f' read -r sid model effort dir ctx tokens week week_reset < <(
   jq -r '[
     (.session_id // ""),
     (.model.display_name // "?"),
@@ -13,9 +13,19 @@ IFS=$'\x1f' read -r sid model effort dir ctx tokens week < <(
     (.workspace.current_dir // .cwd // ""),
     (.context_window.used_percentage // ""),
     (.context_window.current_usage // {} | (.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0)),
-    (.rate_limits.seven_day.used_percentage // "")
+    (.rate_limits.seven_day.used_percentage // ""),
+    (.rate_limits.seven_day.resets_at // "")
   ] | map(tostring) | join("\u001f")' <<<"$input"
 )
+
+# rate_limits only arrives after a session's first API response, so a new session would show
+# wk at 0%. The limit is account-wide: remember the last value until its window resets.
+cache=${XDG_CACHE_HOME:-$HOME/.cache}/claude-statusline/weekly
+if [[ -n $week ]]; then
+  mkdir -p "${cache%/*}" && printf '%s %s\n' "$week" "$week_reset" >"$cache.$$" && mv "$cache.$$" "$cache"
+elif read -r cached_week cached_reset 2>/dev/null <"$cache" && ((${cached_reset:-0} > $(date +%s))); then
+  week=$cached_week
+fi
 
 bold=$'\e[1m' dim=$'\e[2m' reset=$'\e[0m' cyan=$'\e[36m' magenta=$'\e[35m' yellow=$'\e[33m' green=$'\e[32m' red=$'\e[31m'
 
