@@ -38,6 +38,9 @@ My terminal stack follows the macOS system appearance — everything flips betwe
 **Ghostty** (`ghostty/`)<br />
 `config` sets `theme = light:latte-custom,dark:mocha-custom`, and the two palettes live in `ghostty/themes/`: a vivid grey-background Catppuccin Latte variant for light, a custom near-black Catppuccin Mocha for dark. Per-mode app icons are in `ghostty/icons/` (dark → dracula, light → ayu-light), switched live via a `current.icns` symlink maintained by the SwiftBar plugin.<br />
 
+**Zed** (`zed/`)<br />
+`themes/latte-custom.json` is a light Zed theme: the Ghostty `latte-custom` palette as syntax colours (pink keywords, blue strings and numbers, azure functions, magenta keys, bright-blue types, green comments) on an off-white editor, plus Herdr chrome colours (orange cursor, azure accent, pastel-blue selection and rows). Copy it into `~/.config/zed/themes/` and set `"light": "Latte Custom"`.<br />
+
 **Vim** (`vim/vimrc`)<br />
 Auto-switches `background`/`colorscheme` based on `defaults read -g AppleInterfaceStyle`, plus QoL defaults (line numbers, smartcase search, 2-space indent, blinking block cursor, mouse on).<br />
 
