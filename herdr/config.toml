@@ -17,9 +17,14 @@ light_name = "catppuccin-latte"
 # panels transparent so Ghostty's own background shows through (without it the
 # tab bar paints white), overlay0/1 = readable dim text on both panels, teal =
 # azure instead of Catppuccin's teal chips on pane borders, active_row_bg =
-# selected sidebar row (pastel blue light, slate dark).
+# selected sidebar row (pastel blue light, slate dark). surface0 = "reset" makes
+# inactive tabs transparent too: Herdr always leaves a 1-column panel_bg gap between
+# tabs (hardcoded, 0.9.3), so with matching backgrounds tabs read as side by side and
+# only the active (accent) tab is filled. Side effect: toasts and popup input fields
+# lose their grey background.
 [theme.custom.light]
 panel_bg = "reset"
+surface0 = "reset"
 overlay0 = "#6e7286"
 overlay1 = "#7a7e94"
 teal = "#2E9BE0"
@@ -27,6 +32,7 @@ active_row_bg = "#b9cdf2"
 
 [theme.custom.dark]
 panel_bg = "reset"
+surface0 = "reset"
 overlay0 = "#6e7286"
 overlay1 = "#7a7e94"
 teal = "#2E9BE0"
