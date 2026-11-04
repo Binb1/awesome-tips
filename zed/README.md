@@ -19,16 +19,23 @@ reserved for the cursor, git marks and diagnostics; green also marks added files
 - terminal ANSI colours = the Ghostty palette
 - UI greys = Ghostty palette 0/7/8/15 and Herdr's `overlay0/1`
 
-Install: copy it into Zed's theme dir (a symlink does not work: Zed only
+`themes/mocha-custom.json` — the dark counterpart, same role layout, built
+from the Ghostty `mocha-custom` palette and the Herdr dark overrides: near-black
+editor `#151517`, foreground `#EFF1F8`, pink `#FFA9E7` cursor, `#585b70` selection,
+`#363b52` selected rows (Herdr's dark `active_row_bg`), azure accent, terminal
+ANSI = the Ghostty mocha palette. Yellow takes orange's role for search matches
+and modified files.
+
+Install: copy both into Zed's theme dir (a symlink does not work: Zed only
 reloads on file events inside `~/.config/zed/themes/`), then pick it in
 `settings.json`.
 
 ```sh
-cp zed/themes/latte-custom.json ~/.config/zed/themes/
+cp zed/themes/*.json ~/.config/zed/themes/
 ```
 
 ```json
-"theme": { "mode": "system", "light": "Latte Custom", "dark": "Dracula" }
+"theme": { "mode": "system", "light": "Latte Custom", "dark": "Mocha Custom" }
 ```
 
 Zed watches `~/.config/zed/themes/`, so re-copying after an edit applies it live.

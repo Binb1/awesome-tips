@@ -62,10 +62,17 @@ cp herdr/swiftbar/ssh.30s.sh ~/Documents/SwiftBar/
 # 5. Shell helpers — add to the end of ~/.zshrc
 # h() { herdr --session "${1:-${PWD:t}}" }
 #
-# # Reassert the orange cursor at every prompt — ghostty loses theme/config
-# # cursor colors on light/dark appearance switches (ghostty #12708)
-# _orange_cursor() { printf '\e]12;#F8BC82\a' }
-# precmd_functions+=(_orange_cursor)
+# # Reassert the themed cursor at every prompt (orange in light, pink in dark).
+# # Only matters in plain terminal tabs: Herdr drops OSC 12, and ghostty 1.4.0
+# # no longer loses theme cursor colors on light/dark switches (#12708).
+# _theme_cursor() {
+#   if [[ $(defaults read -g AppleInterfaceStyle 2>/dev/null) == Dark ]]; then
+#     printf '\e]12;#FFA9E7\a'
+#   else
+#     printf '\e]12;#F8BC82\a'
+#   fi
+# }
+# precmd_functions+=(_theme_cursor)
 ```
 
 Restart Ghostty fully after copying the config (keybinds and icon need it, a
@@ -84,7 +91,7 @@ config reload is not enough).
 | herdr-ghostty-sidebar layout block | bottom of `~/.config/herdr/config.toml` (managed, rewritten per appearance) |
 | herdr-ghostty-sidebar logo font | `~/Library/Fonts/HerdrSidebarLogos-Regular.ttf` (mapped in the Ghostty config) |
 | Herdr skill for Claude Code | `~/.claude/skills/herdr` |
-| Shell helpers (`h` function + orange-cursor hook) | end of `~/.zshrc` |
+| Shell helpers (`h` function + themed-cursor hook) | end of `~/.zshrc` |
 | Ghostty custom themes (latte-custom / mocha-custom) | `~/.config/ghostty/themes/` |
 | SwiftBar menu bar plugin | SwiftBar plugin folder (copy of `herdr/swiftbar/herdr.stream.sh`) |
 

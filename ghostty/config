@@ -72,10 +72,10 @@ shell-integration-features = no-cursor
 # blinking block cursor
 cursor-style = block
 cursor-style-blink = true
-# cursor color pinned at config level: theme-file cursor colors get stuck
-# on light/dark appearance switches (ghostty discussion #12708)
-cursor-color = #F8BC82
-cursor-text = #202020
+# cursor colors live in the theme files (orange in latte-custom, pink in
+# mocha-custom). Up to ghostty 1.3 they had to be pinned here because theme
+# cursor colors got stuck on light/dark switches (discussion #12708); 1.4.0
+# fixed that, and a config-level value would force one color in both modes.
 
 
 # macos specific features

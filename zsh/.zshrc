@@ -33,8 +33,6 @@ if [ -f "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/D
 
 
 # ZSH CONFIG
-# Blinking block cursor (kept consistent with the vim cursor setting)
-echo -e '\e[1 q'
 
 HISTSIZE=50000
 SAVEHIST=50000
@@ -47,3 +45,6 @@ alias reload="source ~/.zshrc"
 
 export LANG=en_US.UTF-8
 export EDITOR='code'  # or vim, nano, etc.
+
+# awesome-tips shared shell config (cursor hook, herdr helpers); setup.sh adds this line
+source "$HOME/Documents/projects/awesome-tips/zsh/awesome-tips.zsh"
