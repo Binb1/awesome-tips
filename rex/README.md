@@ -15,6 +15,9 @@ session, shell and agent running.
   `latte-custom` (light) and `mocha-custom` (dark), same colours as the Ghostty
   themes in `../ghostty/themes/`, including the orange `#F8BC82` / pink
   `#FFA9E7` cursors.
+- `DEEP-DIVE.md` — what Rex brings, how it differs from Herdr, the key concepts
+  (agent skill, automation surfaces, Program Status Protocol) and what to build
+  with it.
 - `apply.sh` — installs all of it: copies `init.lua` (reloaded live with
   `rex config reload`), writes the themes and the preferences below with
   `defaults`.
